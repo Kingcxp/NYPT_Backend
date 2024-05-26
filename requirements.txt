@@ -1,0 +1,13 @@
+flask
+flask_cors
+flask-session
+openpyxl
+pillow
+pandas
+psutil
+waitress
+uuid
+loguru
+sqlalchemy
+GitPython
+requests
