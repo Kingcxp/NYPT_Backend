@@ -75,7 +75,6 @@ class RuleInterface(metaclass=ABCMeta):
 
     def get_opp_score_weight(
         self,
-        refused_question_id_list: List[RecordData],
     ) -> float:
         """Get opp score weight
 
@@ -87,11 +86,10 @@ class RuleInterface(metaclass=ABCMeta):
         """
         pass
 
-    def get_rep_score_weight(
+    def get_rev_score_weight(
         self,
-        refused_question_id_list: List[RecordData],
     ) -> float:
-        """Get rep score weight
+        """Get rev score weight
 
         Args:
             refused_question_id_list (List[RecordData]): 拒绝的题号列表
