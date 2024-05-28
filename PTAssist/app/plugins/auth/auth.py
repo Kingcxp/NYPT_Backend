@@ -94,7 +94,7 @@ def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
     all: 除 TOKEN 和 AWARD 外全部字段
 
     Returns:
-        Tuple[Dict[str, Any], int]: 成功返回用户信息及状态码 200(OK)，否则返回 400(Bad Request) 或 404(Not Found)，视情况而定
+        Tuple[Dict[str, Any], int]: 成功返回用户信息及状态码 200(OK)，否则返回 400(Bad Request) 或 404(Not Found) 或 500(Internal Server Error)，视情况而定
     """
     if user_id := session.get("user_id") is None:
         warn("GET", "/auth/userdata", "400 Bad Request: 用户未登录！")
@@ -103,11 +103,11 @@ def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
         }, 400
     fetch_result = interface.select_first("USER", where={"UID": ("==", user_id)})
     if fetch_result is None:
-        warn("GET", "/auth/userdata", "400 Bad Request: 用户不存在！")
+        warn("GET", "/auth/userdata", "500 Internal Server Error: 用户不存在！")
         err("GET", "/auth/userdata", "注意！这是重大错误，正常操作不可能出现这种情况！")
         return {
             "msg": "用户不存在！"
-        }, 400
+        }, 500
     suc("GET", "/auth/userdata", "200 OK")
     match which:
         case "user_id":
