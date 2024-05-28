@@ -11,3 +11,5 @@ loguru
 sqlalchemy
 GitPython
 requests
+xlrd
+xlwt
