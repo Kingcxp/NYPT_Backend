@@ -3,17 +3,35 @@ import hashlib
 
 from flask import Blueprint
 
-from ..utils.database.database import Interface
+from ..utils.database.database import Interface, Article
 
 
 interface = Interface(os.path.dirname(os.path.abspath(__file__)), "user_database")
+"""
+表: USER
+
+字段: 
+UID: 用户唯一标识
+NAME: 用户名
+REALNAME: 真实用户名，由后台确定，用户无法更改，登录标识，必须保证唯一，为避免输入麻烦尽量不使用中文
+TOKEN: 用户密码(md5加密)
+TAGS: 用户标签
+IDENTITY: 用户身份
+TEAMNAME: 队伍名称(身份非队伍无效)
+LEADER: 领队信息(身份非队伍无效)格式：姓名 - 性别 - 手机号 - 身份证号 - 学院 - 专业 - QQ - 邮箱
+MEMBER: 队员信息(身份非队伍无效)格式同领队信息，每个队员用 ' | ' 隔开
+AWARD: 奖项信息(身份非队伍无效)
+"""
 interface.create_table("USER", {
     "UID": int,
     "NAME": str,
+    "REALNAME": str,
     "TOKEN": str,
     "TAGS": str,
     "IDENTITY": str,
-    "BANNED": bool
+    "LEADER": str,
+    "MEMBER": str,
+    "AWARD": Article
 })
 
 
