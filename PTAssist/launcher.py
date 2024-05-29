@@ -1,15 +1,17 @@
 import os
 import sys
+import git
 import ctypes
 import inspect
+
 from typing import List
-import git
-from app import create_app
+from rich.table import Table
 from waitress import create_server
 from pathlib import Path
 from threading import Thread
-from app.manager import logger, CommandInterface
- 
+
+from app import create_app
+from app.manager import logger, console, CommandInterface
  
 def _async_raise(tid, exctype):
     """raises the exception, performs cleanup if needed"""
@@ -54,6 +56,7 @@ class HelpCommand(CommandInterface):
         logger.opt(colors=True).info('<y>Shortcuts</y>')
         logger.opt(colors=True).info('<c>Enter</c> <y>help</y> to show this help.')
         logger.opt(colors=True).info('<c>Enter</c> <y>info</y> to show info.')
+        logger.opt(colors=True).info('<c>Enter</c> <y>list-commands</y> to show all the available commands.')
         logger.opt(colors=True).info('<c>Enter</c> <y>quit</y>, <y>stop</y> or <y>exit</y> to stop the server.')
         return True
     
@@ -100,6 +103,29 @@ class ClearCommand(CommandInterface):
         return True
     
 
+class ListCommands(CommandInterface):
+    @property
+    def command(self) -> str:
+        return "list-commands"
+    
+    @property
+    def description(self) -> str:
+        return "List all the commands."
+    
+    @property
+    def usage(self) -> str:
+        return "list-commands"
+    
+    def execute(self, args: List[str]) -> bool:
+        table: Table = Table(show_header=True, header_style="bold green")
+        table.add_column("command", justify="left")
+        table.add_column("description", justify="left")
+        for command in command_manager.commands.keys():
+            table.add_row(command, command_manager.commands_descriptions_and_usages[command][0])
+        console.print(table)
+        return True
+    
+
 def close_server():
     server.close()
     try:
@@ -115,6 +141,7 @@ if __name__ == "__main__":
     command_manager.register_command(HelpCommand())
     command_manager.register_command(InfoCommand())
     command_manager.register_command(ClearCommand())
+    command_manager.register_command(ListCommands())
     server = create_server(app, host='0.0.0.0', port=8081)
     thread = Thread(target=server.run)
     thread.start()
@@ -133,5 +160,5 @@ if __name__ == "__main__":
         if command == "":
             continue
         else:
-            command_line = [c.strip() for c in command.split(' ')]
+            command_line = [c.strip() for c in command.split()]
             command_manager.parse_command(command_line[0], command_line[1:])

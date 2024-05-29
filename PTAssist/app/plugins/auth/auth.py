@@ -77,7 +77,7 @@ def login() -> Tuple[Dict[str, Any], int]:
     return {}, 200
 
 
-@main.route("/auth/userdata/<str:which>", methods=['GET'])
+@main.route("/auth/userdata/<string:which>", methods=['GET'])
 def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
     """获得已登录用户的信息
 

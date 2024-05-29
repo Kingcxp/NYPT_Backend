@@ -309,15 +309,15 @@ class PluginManager:
             else:
                 raise RuntimeError(f"Plugin not found: {name}! Check your plugin name.")
 
-            logger.opt(colors=True).success(
-                f'<g>Succeeded</g> to <m>import</m> "<y>{escape_tag(name)}</y>"'
-            )
             if (blueprint := getattr(module, "__blueprint__", None)) is None:
                 raise RuntimeError(
                     f"Module {module.__name__} is not loaded as a plugin! "
                     "Make sure the __blueprint__ variable is correct."
                 )
             self.app.register_blueprint(blueprint)
+            logger.opt(colors=True).success(
+                f'<g>Succeeded</g> to <m>import</m> "<y>{escape_tag(name)}</y>"'
+            )
             if (commands := getattr(module, "__commands__", None)) is not None:
                 for command in commands:
                     self.manager.register_command(command)

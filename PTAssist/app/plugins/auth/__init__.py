@@ -68,6 +68,17 @@ from .commands import *
 main = Blueprint('auth', __name__)
 __blueprint__ = main
 __commands__ = [
+    NewUser(),
+    DeleteUser(),
+    AddTag(),
+    RemoveTag(),
+    SetIdentity(),
+    SetPassword(),
+    SetRealname(),
+    SetName(),
+    ListTeams(),
+    ListVolunteers(),
+    ListAll()
 ]
 
 

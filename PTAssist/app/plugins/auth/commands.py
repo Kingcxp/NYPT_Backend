@@ -362,7 +362,6 @@ class UserInfo(CommandInterface):
         if query_user is None:
             logger.opt(colors=True).info(f"<r>获取用户 {value_name}=<y>{value}</y> 的信息失败：用户不存在！</r>")
             return True
-        logger.opt(colors=True).info("<g>用户信息如下：</g>")
         self.print_user(query_user)
         return True
     
@@ -383,11 +382,11 @@ class ListTeams(CommandInterface):
     def execute(self, args: List[str]) -> bool:
         teams = interface.select_all("USER", where={"IDENTITY": ("==", "Team")})
         table: Table = Table(show_header=True, header_style="bold green")
-        table.add_column("UID", justify="center")
-        table.add_column("NAME", justify="center")
-        table.add_column("REALNAME", justify="center")
-        table.add_column("TAGS", justify="center")
-        table.add_column("IDENTITY", justify="center")
+        table.add_column("UID", justify="left")
+        table.add_column("NAME", justify="left")
+        table.add_column("REALNAME", justify="left")
+        table.add_column("TAGS", justify="left")
+        table.add_column("IDENTITY", justify="left")
         for team in teams:
             table.add_row(team[0], team[1], team[2], team[4], team[5])
         console.print(table)
@@ -412,11 +411,11 @@ class ListVolunteers(CommandInterface):
             return False
         volunteers = interface.select_all("USER", where={"IDENTITY": ("==", "Volunteer" + args[0].split("-type=")[1])})
         table: Table = Table(show_header=True, header_style="bold green")
-        table.add_column("UID", justify="center")
-        table.add_column("NAME", justify="center")
-        table.add_column("REALNAME", justify="center")
-        table.add_column("TAGS", justify="center")
-        table.add_column("IDENTITY", justify="center")
+        table.add_column("UID", justify="left")
+        table.add_column("NAME", justify="left")
+        table.add_column("REALNAME", justify="left")
+        table.add_column("TAGS", justify="left")
+        table.add_column("IDENTITY", justify="left")
         for volunteer in volunteers:
             table.add_row(volunteer[0], volunteer[1], volunteer[2], volunteer[4], volunteer[5])
         console.print(table)
@@ -439,11 +438,11 @@ class ListAll(CommandInterface):
     def execute(self, args: List[str]) -> bool:
         all = interface.select_all("USER")
         table: Table = Table(show_header=True, header_style="bold green")
-        table.add_column("UID", justify="center")
-        table.add_column("NAME", justify="center")
-        table.add_column("REALNAME", justify="center")
-        table.add_column("TAGS", justify="center")
-        table.add_column("IDENTITY", justify="center")
+        table.add_column("UID", justify="left")
+        table.add_column("NAME", justify="left")
+        table.add_column("REALNAME", justify="left")
+        table.add_column("TAGS", justify="left")
+        table.add_column("IDENTITY", justify="left")
         for user in all:
             table.add_row(user[0], user[1], user[2], user[4], user[5])
         console.print(table)
