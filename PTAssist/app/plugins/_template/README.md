@@ -21,6 +21,8 @@ Commands:
 ```
 command:
     template-test
+description:
+    模板测试命令
 usage:
     template-test
 output:

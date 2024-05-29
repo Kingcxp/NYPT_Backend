@@ -400,7 +400,7 @@ class ListVolunteers(CommandInterface):
     
     @property
     def description(self) -> str:
-        return "列出所有的指定类型志愿者"
+        return "列出所有的指定类型志愿者，分 A 和 B 两种"
     
     @property
     def usage(self) -> str:

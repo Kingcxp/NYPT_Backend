@@ -83,4 +83,111 @@ output:
 
 Commands:
 ```
+command:
+    new-user
+description:
+    创建一个新用户
+usage:
+    new-user <realname> <password> [-identity=<identity>]
+output:
+    为数据库添加一条新的用户记录
+
+command:
+    delete-user
+description:
+    删除一个已存在的用户
+usage:
+    delete-user -id=<uid> 或者 delete-user -realname=<realname>
+output:
+    删除一条现存的符合条件的数据库记录
+
+command:
+    add-tag
+description:
+    为指定用户添加一个标签
+usage:
+    add-tag -id=<uid> <tag> 或者 add-tag -realname=<realname> <tag>
+output:
+    修改指定的记录行的 tag 字段
+
+command:
+    remove-tag
+description:
+    为指定用户添加一个标签
+usage:
+    remove-tag -id=<uid> <tag> 或者 remove-tag -realname=<realname> <tag>
+output:
+    修改指定的记录行的 tag 字段
+
+command:
+    set-identity
+description:
+    为指定用户添加一个标签
+usage:
+    set-identity -id=<uid> <identity> 或者 set-identity -realname=<realname> <identity>
+output:
+    修改指定的记录行的 identity 字段
+
+command:
+    set-password
+description:
+    为指定用户添加一个标签
+usage:
+    set-password -id=<uid> <password> 或者 set-password -realname=<realname> <password>
+output:
+    修改指定的记录行的 password 字段
+
+command:
+    set-realname
+description:
+    为指定用户添加一个标签
+usage:
+    set-realname -id=<uid> <new_realname> 或者 set-realname -realname=<old_realname> <new_realname>
+output:
+    修改指定的记录行的 realname 字段
+
+command:
+    set-name
+description:
+    为指定用户添加一个标签
+usage:
+    set-name -id=<uid> <name> 或者 set-name -realname=<realname> <name>
+output:
+    修改指定的记录行的 name 字段
+
+command:
+    user-info
+description:
+    获取指定用户的信息
+usage:
+    user-info -id=<uid> 或者 user-info -realname=<realname>
+output:
+    输出指定用户的所有字段信息（除奖项信息以外，因为还没有确定奖项的存储形式，大概是奖状图片的base64字符串，长的一批根本没法展示在命令行中）
+
+command:
+    list-teams
+description:
+    获取 identity 为 Team 的用户信息
+usage:
+    list-teams
+output:
+    所有队伍的基础信息，要想详细查看，请借助这些信息使用 user-info 命令查找
+
+command:
+    list-volunteers
+description:
+    列出所有的指定类型志愿者
+usage:
+    list-volunteers -type=<type>
+output:
+    所有指定身份类型的志愿者的基础信息，要想详细查看，请借助这些信息使用 user-info 命令查找
+
+command:
+    list-all
+description:
+    同上，但列出所有用户，无论身份类型
+usage:
+    list-all
+output:
+    所有用户的基础信息
 ```
