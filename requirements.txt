@@ -13,3 +13,4 @@ GitPython
 requests
 xlrd
 xlwt
+rich

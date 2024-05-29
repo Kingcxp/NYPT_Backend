@@ -1,4 +1,9 @@
-import pkgutil, importlib, re, sys
+import re
+import sys
+import pkgutil
+import importlib
+
+from rich.console import Console
 from traceback import print_exc
 from abc import abstractmethod, ABCMeta
 from flask import Flask
@@ -20,6 +25,8 @@ logger_id = logger.add(
     ),
 )
 __autodoc__ = {"logger_id": False}
+
+console: Console = Console()
 
 
 def warn(method: Literal["GET", "POST"], router: str, msg: str):
