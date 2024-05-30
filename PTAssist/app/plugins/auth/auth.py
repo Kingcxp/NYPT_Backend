@@ -135,6 +135,42 @@ def login() -> Tuple[Dict[str, Any], int]:
     return {}, 200
 
 
+@main.route("/auth/login/emailpass", methods=["POST"])
+def login() -> Tuple[Dict[str, Any], int]:
+    """登录，在 session 中保存登录信息
+
+    POST 表单信息:
+    {
+        "email": str(对应数据表中的 EMAIL)
+        "token": str(双层加密后的密码)
+        "salt": str(加密密码中加的盐)
+    }
+
+    Returns:
+        Tuple[Dict[str, Any], int]: 成功返回状态码 200(OK)，否则返回 400(Bad Request)
+    """
+    user_email: str = request.json["email"]
+    user_token: str = request.json["token"]
+    user_salt: str = request.json["salt"]
+    try_fetch = interface.select_first("USER", where={"EMAIL": ("==", user_email)})
+    fetch_result = None
+    if try_fetch is not None:
+        fetch_result = try_fetch[Index.TOKEN]
+    if fetch_result is None:
+        warn("POST", "/auth/login/emailpass", f"400 Bad Request: 未找到邮箱为 {user_email} 的用户！")
+        return {
+            "msg": "邮箱不存在！"
+        }, 400
+    if encrypter(fetch_result, user_salt) != user_token:
+        warn("POST", "/auth/login/emailpass", "400 Bad Request: 密码错误！")
+        return {
+            "msg": "密码错误！"
+        }, 400
+    session["user_id"] = try_fetch[Index.UID]
+    suc("POST", "/auth/login/emailpass", "200 OK")
+    return {}, 200
+
+
 @main.route("/auth/userdata/<string:which>", methods=['GET'])
 def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
     """获得已登录用户的信息
