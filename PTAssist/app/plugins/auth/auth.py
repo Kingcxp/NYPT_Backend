@@ -5,7 +5,7 @@ from typing import Dict, List, Any, Tuple, Optional
 from random import randint
 from functools import reduce
 
-from . import main, interface, next_uid, encrypter
+from . import main, interface, encrypter, Index
 from ...manager import warn, suc, err
 from ..utils.email.email import send_mail
 
@@ -119,7 +119,7 @@ def login() -> Tuple[Dict[str, Any], int]:
     try_fetch = interface.select_first("USER", where={"REALNAME": ("==", user_name)})
     fetch_result = None
     if try_fetch is not None:
-        fetch_result = try_fetch[3]
+        fetch_result = try_fetch[Index.TOKEN]
     if fetch_result is None:
         warn("POST", "/auth/login/userpass", f"400 Bad Request: 未找到名为 {user_name} 的用户！")
         return {
@@ -130,7 +130,7 @@ def login() -> Tuple[Dict[str, Any], int]:
         return {
             "msg": "密码错误！"
         }, 400
-    session["user_id"] = try_fetch[0]
+    session["user_id"] = try_fetch[Index.UID]
     suc("POST", "/auth/login/userpass", "200 OK")
     return {}, 200
 
@@ -141,14 +141,15 @@ def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
 
     通过路由传入：
     字符串，需要获取的内容名称，总共有如下几种：
-    user_id: UID
-    user_name: NAME
-    real_name: REALNAME
-    tags: TAGS
-    identity: IDENTITY
-    leader: LEADER
-    member: MEMBER
-    award: AWARD
+    user_id:    UID
+    user_name:  NAME
+    real_name:  REALNAME
+    email:      EMAIL
+    tags:       TAGS
+    identity:   IDENTITY
+    leader:     LEADER
+    member:     MEMBER
+    award:      AWARD
     all: 除 TOKEN 和 AWARD 外全部字段
 
     Returns:
@@ -170,45 +171,50 @@ def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
     match which:
         case "user_id":
             return {
-                "user_id": fetch_result[0]
+                "user_id": fetch_result[Index.UID]
             }, 200
         case "user_name":
             return {
-                "user_name": fetch_result[1]
+                "user_name": fetch_result[Index.NAME]
             }, 200
         case "real_name":
             return {
-                "real_name": fetch_result[2]
+                "real_name": fetch_result[Index.REALNAME]
+            }, 200
+        case "email":
+            return {
+                "email": fetch_result[Index.EMAIL]
             }, 200
         case "tags":
             return {
-                "tags": fetch_result[4]
+                "tags": fetch_result[Index.TAGS]
             }, 200
         case "identity":
             return {
-                "identity": fetch_result[5]
+                "identity": fetch_result[Index.IDENTITY]
             }, 200
         case "leader":
             return {
-                "leader": fetch_result[6]
+                "leader": fetch_result[Index.LEADER]
             }, 200
         case "member":
             return {
-                "member": fetch_result[7]
+                "member": fetch_result[Index.MEMBER]
             }, 200
         case "award":
             return {
-                "award": fetch_result[8]
+                "award": fetch_result[Index.AWARD]
             }, 200
         case "all":
             return {
-                "user_id": fetch_result[0],
-                "user_name": fetch_result[1],
-                "real_name": fetch_result[2],
-                "tags": fetch_result[4],
-                "identity": fetch_result[5],
-                "leader": fetch_result[6],
-                "member": fetch_result[7],
+                "user_id": fetch_result[Index.UID],
+                "user_name": fetch_result[Index.NAME],
+                "real_name": fetch_result[Index.REALNAME],
+                "email": fetch_result[Index.EMAIL],
+                "tags": fetch_result[Index.TAGS],
+                "identity": fetch_result[Index.IDENTITY],
+                "leader": fetch_result[Index.LEADER],
+                "member": fetch_result[Index.MEMBER],
             }, 200
         case _:
             return {

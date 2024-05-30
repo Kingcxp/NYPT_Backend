@@ -94,7 +94,7 @@ command:
 description:
     创建一个新用户
 usage:
-    new-user <realname> <password> [-identity=<identity>]
+    new-user <realname> <email> <password> [-identity=<identity>]
 output:
     为数据库添加一条新的用户记录
 
@@ -103,7 +103,7 @@ command:
 description:
     删除一个已存在的用户
 usage:
-    delete-user -id=<uid> 或者 delete-user -realname=<realname>
+    delete-user -id=<uid> 或者 delete-user -realname=<realname>  或者 delete-user -email=<email>
 output:
     删除一条现存的符合条件的数据库记录
 
@@ -112,7 +112,7 @@ command:
 description:
     为指定用户添加一个标签
 usage:
-    add-tag -id=<uid> <tag> 或者 add-tag -realname=<realname> <tag>
+    add-tag -id=<uid> <tag> 或者 add-tag -realname=<realname> <tag> 或者 add-tag -email=<email> <tag>
 output:
     修改指定的记录行的 tag 字段
 
@@ -121,7 +121,7 @@ command:
 description:
     为指定用户添加一个标签
 usage:
-    remove-tag -id=<uid> <tag> 或者 remove-tag -realname=<realname> <tag>
+    remove-tag -id=<uid> <tag> 或者 remove-tag -realname=<realname> <tag> 或者 remove-tag -email=<email> <tag>
 output:
     修改指定的记录行的 tag 字段
 
@@ -130,7 +130,7 @@ command:
 description:
     为指定用户添加一个标签
 usage:
-    set-identity -id=<uid> <identity> 或者 set-identity -realname=<realname> <identity>
+    set-identity -id=<uid> <identity> 或者 set-identity -realname=<realname> <identity> 或者 set-identity -email=<email> <identity>
 output:
     修改指定的记录行的 identity 字段
 
@@ -139,7 +139,7 @@ command:
 description:
     为指定用户添加一个标签
 usage:
-    set-password -id=<uid> <password> 或者 set-password -realname=<realname> <password>
+    set-password -id=<uid> <password> 或者 set-password -realname=<realname> <password> 或者 set-password -email=<email> <password>
 output:
     修改指定的记录行的 password 字段
 
@@ -148,7 +148,7 @@ command:
 description:
     为指定用户添加一个标签
 usage:
-    set-realname -id=<uid> <new_realname> 或者 set-realname -realname=<old_realname> <new_realname>
+    set-realname -id=<uid> <realname> 或者 set-realname -realname=<old_realname> <new_realname> 或者 set-realname -email=<email> <realname>
 output:
     修改指定的记录行的 realname 字段
 
@@ -157,7 +157,7 @@ command:
 description:
     为指定用户添加一个标签
 usage:
-    set-name -id=<uid> <name> 或者 set-name -realname=<realname> <name>
+    set-name -id=<uid> <name> 或者 set-name -realname=<realname> <name> 或者 set-name -email=<email> <name>
 output:
     修改指定的记录行的 name 字段
 
@@ -166,7 +166,7 @@ command:
 description:
     获取指定用户的信息
 usage:
-    user-info -id=<uid> 或者 user-info -realname=<realname>
+    user-info -id=<uid> 或者 user-info -realname=<realname> 或者 user-info -email=<email>
 output:
     输出指定用户的所有字段信息（除奖项信息以外，因为还没有确定奖项的存储形式，大概是奖状图片的base64字符串，长的一批根本没法展示在命令行中）
 

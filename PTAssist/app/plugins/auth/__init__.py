@@ -1,12 +1,13 @@
 import os
 import hashlib
 
+from enum import Enum
 from flask import Blueprint
 
 from ..utils.database.database import Interface, Article
 
 
-interface = Interface(os.path.dirname(os.path.abspath(__file__)), "user_database")
+interface = Interface(os.path.dirname(os.path.abspath(__file__)), "auth_database")
 """
 表: USER
 
@@ -14,6 +15,7 @@ interface = Interface(os.path.dirname(os.path.abspath(__file__)), "user_database
 UID: 用户唯一标识
 NAME: 用户名
 REALNAME: 真实用户名，由后台确定，用户无法更改，登录标识，必须保证唯一，为避免输入麻烦尽量不使用中文
+EMAIL: 联系人邮箱，唯一标识
 TOKEN: 用户密码(base64编码)
 TAGS: 用户标签
 IDENTITY: 用户身份
@@ -26,13 +28,37 @@ interface.create_table("USER", {
     "UID": int,
     "NAME": str,
     "REALNAME": str,
+    "EMAIL": str,
     "TOKEN": str,
-    "TAGS": str,
     "IDENTITY": str,
+    "TAGS": str,
     "LEADER": str,
     "MEMBER": str,
     "AWARD": Article
 })
+interface.create_table("PENDING_REQUEST", {
+    "RID": int,
+    "NAME": str,
+    "SCHOOL": str,
+    "EMAIL": str,
+    "TEL": str,
+    "IDENTITY": str
+})
+class Index(Enum):
+    UID         = 0
+    NAME        = 1
+    REALNAME    = 2
+    EMAIL       = 3
+    TOKEN       = 4
+    IDENTITY    = 5
+    TAGS        = 6
+    LEADER      = 7
+    MEMBER      = 8
+    AWARD       = 9
+
+    RID         = 0
+    SCHOOL      = 2
+    TEL         = 4
 
 
 def encrypter(victim: str, salt: str) -> str:

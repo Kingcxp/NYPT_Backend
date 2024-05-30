@@ -1,8 +1,8 @@
-from base64 import b64encode, b64decode
+from base64 import b64encode
 from typing import List, Any
 from rich.table import Table
 
-from . import interface, next_uid
+from . import interface, next_uid, Index
 from ...manager import CommandInterface, logger, console
 
 
@@ -17,20 +17,25 @@ class NewUser(CommandInterface):
     
     @property
     def usage(self) -> str:
-        return "new-user <realname> <password> [-identity=<identity>]"
+        return "new-user <realname> <email> <password> [-identity=<identity>]"
 
     def execute(self, args: List[str]) -> bool:
-        if (len(args) != 2 and len(args) != 3) or \
-            (len(args) == 3 and not args[2].startswith("-identity=")):
+        if (len(args) != 3 and len(args) != 4) or \
+            (len(args) == 4 and not args[3].startswith("-identity=")):
             return False
         realname = args[0]
-        password = args[1]
+        email = args[1]
+        password = args[2]
         identity = "Team"
-        if len(args) == 3:
-            identity = args[2].split("-identity=")[1]
+        if len(args) == 4:
+            identity = args[3].split("-identity=")[1]
         query_user = interface.select_first("USER", where={"REALNAME": ("==", realname)})
         if query_user is not None:
             logger.opt(colors=True).info(f"<r>用户名 <y>{realname}</y> 已经存在！</r>")
+            return True
+        query_user = interface.select_first("USER", where={"EMAIL": ("==", email)})
+        if query_user is not None:
+            logger.opt(colors=True).info(f"<r>邮箱 <y>{email}</y> 已经存在！</r>")
             return True
         logger.opt(colors=True).info(f"<g>正在创建用户 <y>{realname}</y> ...</g>")
         user_id = next_uid()
@@ -38,6 +43,7 @@ class NewUser(CommandInterface):
             UID=user_id,
             NAME=realname,
             REALNAME=realname,
+            EMAIL=email,
             TOKEN=b64encode(password.encode('utf-8')).decode('utf-8'),
             TAGS="",
             IDENTITY=identity,
@@ -61,7 +67,7 @@ class DeleteUser(CommandInterface):
     
     @property
     def usage(self) -> str:
-        return "delete-user -id=<uid> 或者 delete-user -realname=<realname>"
+        return "delete-user -id=<uid> 或者 delete-user -realname=<realname> 或者 delete-user -email=<email>"
     
     def execute(self, args: List[str]) -> bool:
         if len(args) != 1:
@@ -73,6 +79,8 @@ class DeleteUser(CommandInterface):
             key, value, value_name = "UID", args[0].split("-id=")[1], "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
+        elif args[0].startswith("-email="):
+            key, value, value_name = "EMAIL", args[0].split("-email=")[1], "email"
         else:
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
@@ -96,7 +104,7 @@ class AddTag(CommandInterface):
     
     @property
     def usage(self) -> str:
-        return "add-tag -id=<uid> <tag> 或者 add-tag -realname=<realname> <tag>"
+        return "add-tag -id=<uid> <tag> 或者 add-tag -realname=<realname> <tag> 或者 add-tag -email=<email> <tag>"
     
     def execute(self, args: List[str]) -> bool:
         if len(args) != 2:
@@ -108,13 +116,15 @@ class AddTag(CommandInterface):
             key, value, value_name = "UID", args[0].split("-id=")[1], "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
+        elif args[0].startswith("-email="):
+            key, value, value_name = "EMAIL", args[0].split("-email=")[1], "email"
         else:
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
             logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户添加 tag 失败：用户不存在！</r>")
             return True
-        tags: str = query_user[4]
+        tags: str = query_user[Index.TAGS]
         if args[1] in tags:
             logger.opt(colors=True).info(f"<b>为 {value_name}=<y>{value}</y> 的用户添加 tag 失败：用户已经拥有该标签！</b>")
         logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户添加 tag ...</g>")
@@ -138,7 +148,7 @@ class RemoveTag(CommandInterface):
     
     @property
     def usage(self) -> str:
-        return "remove-tag -id=<uid> <tag> 或者 remove-tag -realname=<realname> <tag>"
+        return "remove-tag -id=<uid> <tag> 或者 remove-tag -realname=<realname> <tag> 或者 remove-tag -email=<email> <tag>"
     
     def execute(self, args: List[str]) -> bool:
         if len(args) != 2:
@@ -150,13 +160,15 @@ class RemoveTag(CommandInterface):
             key, value, value_name = "UID", args[0].split("-id=")[1], "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
+        elif args[0].startswith("-email="):
+            key, value, value_name = "EMAIL", args[0].split("-email=")[1], "email"
         else:
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
             logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户移除 tag 失败：用户不存在！</r>")
             return True
-        tags: str = query_user[4]
+        tags: str = query_user[Index.TAGS]
         if args[1] not in tags:
             logger.opt(colors=True).info(f"<b>为 {value_name}=<y>{value}</y> 的用户移除 tag 失败：用户未拥有该标签！</b>")
         logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户移除 tag ...</g>")
@@ -183,7 +195,7 @@ class SetIdentity(CommandInterface):
     
     @property
     def usage(self) -> str:
-        return "set-identity -id=<uid> <identity> 或者 set-identity -realname=<realname> <identity>"
+        return "set-identity -id=<uid> <identity> 或者 set-identity -realname=<realname> <identity> 或者 set-identity -email=<email> <identity>"
     
     def execute(self, args: List[str]) -> bool:
         if len(args) != 2:
@@ -195,6 +207,8 @@ class SetIdentity(CommandInterface):
             key, value, value_name = "UID", args[0].split("-id=")[1], "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
+        elif args[0].startswith("-email="):
+            key, value, value_name = "EMAIL", args[0].split("-email=")[1], "email"
         else:
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
@@ -218,7 +232,7 @@ class SetPassword(CommandInterface):
     
     @property
     def usage(self) -> str:
-        return "set-password -id=<uid> <password> 或者 set-password -realname=<realname> <password>"
+        return "set-password -id=<uid> <password> 或者 set-password -realname=<realname> <password> 或者 set-password -email=<email> <password>"
     
     def execute(self, args: List[str]) -> bool:
         if len(args) != 2:
@@ -230,6 +244,8 @@ class SetPassword(CommandInterface):
             key, value, value_name = "UID", args[0].split("-id=")[1], "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
+        elif args[0].startswith("-email="):
+            key, value, value_name = "EMAIL", args[0].split("-email=")[1], "email"
         else:
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
@@ -253,7 +269,7 @@ class SetRealname(CommandInterface):
     
     @property
     def usage(self) -> str:
-        return "set-realname -id=<uid> <new_realname> 或者 set-realname -realname=<old_realname> <new_realname>"
+        return "set-realname -id=<uid> <realname> 或者 set-realname -realname=<old_realname> <new_realname> 或者set-realname -email=<email> <realname>"
     
     def execute(self, args: List[str]) -> bool:
         if len(args) != 2:
@@ -265,6 +281,8 @@ class SetRealname(CommandInterface):
             key, value, value_name = "UID", args[0].split("-id=")[1], "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
+        elif args[0].startswith("-email="):
+            key, value, value_name = "EMAIL", args[0].split("-email=")[1], "email"
         else:
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
@@ -288,7 +306,7 @@ class SetName(CommandInterface):
     
     @property
     def usage(self) -> str:
-        return "set-name -id=<uid> <name> 或者 set-name -realname=<realname> <name>"
+        return "set-name -id=<uid> <name> 或者 set-name -realname=<realname> <name> 或者 set-name -email=<email> <name>"
     
     def execute(self, args: List[str]) -> bool:
         if len(args) != 2:
@@ -300,6 +318,8 @@ class SetName(CommandInterface):
             key, value, value_name = "UID", args[0].split("-id=")[1], "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
+        elif args[0].startswith("-email="):
+            key, value, value_name = "EMAIL", args[0].split("-email=")[1], "email"
         else:
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
@@ -316,22 +336,24 @@ class UserInfo(CommandInterface):
     @staticmethod
     def print_user(user: List[Any]) -> None:
         console.print("UID: ", style="bold blue", end="")
-        console.print(f"{user[0]}", style="yellow")
+        console.print(f"{user[Index.UID]}", style="yellow")
         console.print(f"NAME: ", style="bold blue", end="")
-        console.print(f"{user[1]}", style="yellow")
+        console.print(f"{user[Index.NAME]}", style="yellow")
         console.print(f"REALNAME: ", style="bold blue", end="")
-        console.print(f"{user[2]}", style="yellow")
+        console.print(f"{user[Index.REALNAME]}", style="yellow")
+        console.print(f"EMAIL: ", style="bold blue", end="")
+        console.print(f"{user[Index.EMAIL]}", style="yellow")
         console.print(f"TOKEN: ", style="bold blue", end="")
-        console.print(f"{user[3]}", style="yellow")
+        console.print(f"{user[Index.TOKEN]}", style="yellow")
         console.print(f"TAGS: ", style="bold blue", end="")
-        console.print(f"{user[4]}", style="yellow")
+        console.print(f"{user[Index.TAGS]}", style="yellow")
         console.print(f"IDENTITY: ", style="bold blue", end="")
-        console.print(f"{user[5]}", style="yellow")
-        if user[5] == "Team":
+        console.print(f"{user[Index.IDENTITY]}", style="yellow")
+        if user[Index.IDENTITY] == "Team":
             console.print(f"LEADER: ", style="bold blue", end="")
-            console.print(f"{user[6]}", style="yellow")
+            console.print(f"{user[Index.LEADER]}", style="yellow")
             console.print(f"MEMBER: ", style="bold blue", end="")
-            console.print(f"{user[7]}", style="yellow")
+            console.print(f"{user[Index.MEMBER]}", style="yellow")
 
     @property
     def command(self) -> str:
@@ -343,7 +365,7 @@ class UserInfo(CommandInterface):
     
     @property
     def usage(self) -> str:
-        return "user-info -id=<uid> 或者 user-info -realname=<realname>"
+        return "user-info -id=<uid> 或者 user-info -realname=<realname> 或者 user-info -email=<email>"
     
     def execute(self, args: List[str]) -> bool:
         if len(args) != 1:
@@ -355,6 +377,8 @@ class UserInfo(CommandInterface):
             key, value, value_name = "UID", args[0].split("-id=")[1], "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
+        elif args[0].startswith("-email="):
+            key, value, value_name = "EMAIL", args[0].split("-email=")[1], "email"
         else:
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
@@ -384,10 +408,18 @@ class ListTeams(CommandInterface):
         table.add_column("UID", justify="left")
         table.add_column("NAME", justify="left")
         table.add_column("REALNAME", justify="left")
+        table.add_column("EMAIL", justify="left")
         table.add_column("TAGS", justify="left")
         table.add_column("IDENTITY", justify="left")
         for team in teams:
-            table.add_row(team[0], team[1], team[2], team[4], team[5])
+            table.add_row(
+                team[Index.UID],
+                team[Index.NAME],
+                team[Index.REALNAME],
+                team[Index.EMAIL],
+                team[Index.TAGS],
+                team[Index.IDENTITY]
+            )
         console.print(table)
         return True
     
@@ -413,10 +445,18 @@ class ListVolunteers(CommandInterface):
         table.add_column("UID", justify="left")
         table.add_column("NAME", justify="left")
         table.add_column("REALNAME", justify="left")
+        table.add_column("EMAIL", justify="left")
         table.add_column("TAGS", justify="left")
         table.add_column("IDENTITY", justify="left")
         for volunteer in volunteers:
-            table.add_row(volunteer[0], volunteer[1], volunteer[2], volunteer[4], volunteer[5])
+            table.add_row(
+                volunteer[Index.UID],
+                volunteer[Index.NAME],
+                volunteer[Index.REALNAME],
+                volunteer[Index.EMAIL],
+                volunteer[Index.TAGS],
+                volunteer[Index.IDENTITY]
+            )
         console.print(table)
         return True
     
@@ -440,9 +480,17 @@ class ListAll(CommandInterface):
         table.add_column("UID", justify="left")
         table.add_column("NAME", justify="left")
         table.add_column("REALNAME", justify="left")
+        table.add_column("EMAIL", justify="left")
         table.add_column("TAGS", justify="left")
         table.add_column("IDENTITY", justify="left")
         for user in all:
-            table.add_row(user[0], user[1], user[2], user[4], user[5])
+            table.add_row(
+                user[Index.UID],
+                user[Index.NAME],
+                user[Index.REALNAME],
+                user[Index.EMAIL],
+                user[Index.TAGS],
+                user[Index.IDENTITY]
+            )
         console.print(table)
         return True
