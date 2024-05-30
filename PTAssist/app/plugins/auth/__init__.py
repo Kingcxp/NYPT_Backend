@@ -14,7 +14,7 @@ interface = Interface(os.path.dirname(os.path.abspath(__file__)), "user_database
 UID: 用户唯一标识
 NAME: 用户名
 REALNAME: 真实用户名，由后台确定，用户无法更改，登录标识，必须保证唯一，为避免输入麻烦尽量不使用中文
-TOKEN: 用户密码(md5加密)
+TOKEN: 用户密码(base64编码)
 TAGS: 用户标签
 IDENTITY: 用户身份
 TEAMNAME: 队伍名称(身份非队伍无效)

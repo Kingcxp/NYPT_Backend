@@ -1,5 +1,4 @@
-import hashlib
-
+from base64 import b64encode, b64decode
 from typing import List, Any
 from rich.table import Table
 
@@ -39,7 +38,7 @@ class NewUser(CommandInterface):
             UID=user_id,
             NAME=realname,
             REALNAME=realname,
-            TOKEN=hashlib.md5(password.encode()).hexdigest(),
+            TOKEN=b64encode(password.encode('utf-8')).decode('utf-8'),
             TAGS="",
             IDENTITY=identity,
             TEAMNAME="",
@@ -238,7 +237,7 @@ class SetPassword(CommandInterface):
             logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户更改 password 失败：用户不存在！</r>")
             return True
         logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户更改 password ...</g>")
-        interface.update("USER", where={key: ("==", value)}, TOKEN=hashlib.md5(args[1].encode()).hexdigest())
+        interface.update("USER", where={key: ("==", value)}, TOKEN=b64encode(args[1].encode('utf-8')).decode('utf-8'))
         logger.opt(colors=True).info(f"<g>为 {value_name}=<y>{value}</y> 的用户更改 password 成功！</g>")
         return True
     

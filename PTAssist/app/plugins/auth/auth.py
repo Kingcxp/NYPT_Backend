@@ -1,3 +1,5 @@
+import time
+
 from flask import request, session
 from typing import Dict, List, Any, Tuple, Optional
 from random import randint
@@ -5,6 +7,7 @@ from functools import reduce
 
 from . import main, interface, next_uid, encrypter
 from ...manager import warn, suc, err
+from ..utils.email.email import send_mail
 
 
 @main.route("/auth/id", methods=["GET"])
@@ -23,6 +26,61 @@ def require_id() -> Tuple[Dict[str, Any], int]:
     return {
         "msg": "您尚未登录！"
     }, 400
+
+
+@main.route("/auth/verify", methods=["POST"])
+def verify_email() -> Tuple[Dict[str, Any], int]:
+    """生成验证码并通过邮件发送到指定邮箱
+    将验证码存储在session中
+
+    POST 表单信息:
+    {
+        "email": str(邮箱地址)
+    }
+
+    Returns:
+        Tuple[Dict[str, Any], int]: 成功返回 200(OK)，否则(控制同一个session间隔30秒才能发一次)返回 400(Bad Request)，若失败返回 500(Internal Server Error)
+    """
+    timeout: float = 30.0
+
+    email = request.json["email"]
+    captcha = reduce(lambda x, y: x + y, [str(randint(0, 9)) for i in range(6)])
+    email_msg = f"尊敬的用户，您好：\n\n\t您正在通过 PTAssist 平台进行邮箱验证操作，本次验证码为 {captcha} (为了保证您的账户安全性，请您尽快完成验证！)\n为了保证账户安全，请勿泄露此验证码。\n祝在之后的比赛中收获愉快！\n(这是一封自动发送的邮件，请不要回复！)\n"
+    if (last_time := session.get("last_captcha_time")) is not None and (time_left := timeout - (time.time() - last_time)) > 0.0:
+        warn("POST", "/auth/verify", f"400 Bad Request: 请在 {time_left} 秒后再发送验证码！")
+        return {
+            "time_left": {time_left},
+            "msg": f"请在 {time_left} 秒后再发送验证码！"
+        }, 400
+    if send_mail(
+        target=email, sender_name="PTAssist",
+        title="验证邮件", msg=email_msg
+    ):
+        session["captcha"] = captcha
+        session["last_captcha_time"] = time.time()
+        session["email"] = email
+        suc("POST", "/auth/verify", "200 OK")
+        return {}, 200
+    else:
+        err("POST", "auth/verify", "500 Internal Server Error: 邮件发送失败！")
+        return {
+            "msg": "发送失败！请检查邮箱是否输入正确！"
+        }, 500
+    
+
+@main.route("/auth/deprecate", methods=["GET"])
+def deprecate() -> Tuple[Dict[str, Any], int]:
+    """立即销毁session中的验证码
+
+    Returns:
+        Tuple[Dict[str, Any], int]: 均返回 200(OK)，因为一定会成功
+    """
+    if session.get("captcha") != None:
+        session.pop("captcha")
+        session.pop("email")
+        session.pop("last_captcha_time")
+    suc("GET", "/auth/deprecate", "200 OK")
+    return {}, 200
     
 
 @main.route("/auth/logout", methods=["GET"])
@@ -41,7 +99,7 @@ def logout() -> Tuple[Dict[str, Any], int]:
     }, 400
 
 
-@main.route("/auth/login", methods=["POST"])
+@main.route("/auth/login/userpass", methods=["POST"])
 def login() -> Tuple[Dict[str, Any], int]:
     """登录，在 session 中保存登录信息
 
@@ -63,17 +121,17 @@ def login() -> Tuple[Dict[str, Any], int]:
     if try_fetch is not None:
         fetch_result = try_fetch[3]
     if fetch_result is None:
-        warn("POST", "/auth/login", f"400 Bad Request: 未找到名为 {user_name} 的用户！")
+        warn("POST", "/auth/login/userpass", f"400 Bad Request: 未找到名为 {user_name} 的用户！")
         return {
             "msg": "用户名不存在！"
         }, 400
     if encrypter(fetch_result, user_salt) != user_token:
-        warn("POST", "/auth/login", "400 Bad Request: 密码错误！")
+        warn("POST", "/auth/login/userpass", "400 Bad Request: 密码错误！")
         return {
             "msg": "密码错误！"
         }, 400
     session["user_id"] = try_fetch[0]
-    suc("POST", "/auth/login", "200 OK")
+    suc("POST", "/auth/login/userpass", "200 OK")
     return {}, 200
 
 
