@@ -59,6 +59,27 @@ output:
         {msg: str}
 
 route:
+    /auth/register
+method:
+    POST
+input:
+    {
+        "school": str(学校名称)
+        "name": str(队伍名称或志愿者名称)
+        "email": str(邮箱地址)
+        "tel": str(电话号码)
+        "identity": str(用户身份)
+        "captcha": str(验证码)
+        "contact": str(联系人姓名，identity为Team时才存在)
+    }
+output:
+    200 OK:
+        {}
+    400 Bad Request:
+        # msg: 错误信息
+        {msg: str}
+
+route:
     /auth/userdata/<str:which>
 method:
     GET
@@ -119,7 +140,7 @@ output:
 command:
     remove-tag
 description:
-    为指定用户添加一个标签
+    为指定用户移除一个标签
 usage:
     remove-tag -id=<uid> <tag> 或者 remove-tag -realname=<realname> <tag> 或者 remove-tag -email=<email> <tag>
 output:
@@ -128,7 +149,7 @@ output:
 command:
     set-identity
 description:
-    为指定用户添加一个标签
+    为指定用户更改身份
 usage:
     set-identity -id=<uid> <identity> 或者 set-identity -realname=<realname> <identity> 或者 set-identity -email=<email> <identity>
 output:
@@ -137,16 +158,25 @@ output:
 command:
     set-password
 description:
-    为指定用户添加一个标签
+    为指定用户更改密码
 usage:
     set-password -id=<uid> <password> 或者 set-password -realname=<realname> <password> 或者 set-password -email=<email> <password>
 output:
     修改指定的记录行的 password 字段
 
 command:
+    show-password
+description:
+    展示指定用户的密码
+usage:
+    show-password -id=<uid> 或者 show-password -realname=<realname> 或者 show-password -email=<email>
+output:
+    指定用户的密码
+
+command:
     set-realname
 description:
-    为指定用户添加一个标签
+    为指定用户更改标识
 usage:
     set-realname -id=<uid> <realname> 或者 set-realname -realname=<old_realname> <new_realname> 或者 set-realname -email=<email> <realname>
 output:
@@ -155,7 +185,7 @@ output:
 command:
     set-name
 description:
-    为指定用户添加一个标签
+    为指定用户更改用户名
 usage:
     set-name -id=<uid> <name> 或者 set-name -realname=<realname> <name> 或者 set-name -email=<email> <name>
 output:
@@ -169,6 +199,33 @@ usage:
     user-info -id=<uid> 或者 user-info -realname=<realname> 或者 user-info -email=<email>
 output:
     输出指定用户的所有字段信息（除奖项信息以外，因为还没有确定奖项的存储形式，大概是奖状图片的base64字符串，长的一批根本没法展示在命令行中）
+
+command:
+    list-requests
+description:
+    列出所有的注册请求
+usage:
+    list-requests
+output:
+    所有请求的信息
+
+command:
+    accept-request
+description:
+    通过指定的请求，自动创建账号，并通过邮件告知用户
+usage:
+    accept-request -id=<rid>
+output:
+    指令执行是否成功及错误原因
+
+command:
+    reject-request
+description:
+    拒绝指定的请求，并通过邮件告知用户
+usage:
+    reject-request
+output:
+    指令是否执行成功及错误原因
 
 command:
     list-teams

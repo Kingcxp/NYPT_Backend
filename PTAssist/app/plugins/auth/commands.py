@@ -1,5 +1,5 @@
-from base64 import b64encode
-from typing import List, Any
+from base64 import b64encode, b64decode
+from typing import List, Any, Union
 from rich.table import Table
 
 from . import interface, next_uid, Index
@@ -47,7 +47,7 @@ class NewUser(CommandInterface):
             TOKEN=b64encode(password.encode('utf-8')).decode('utf-8'),
             TAGS="",
             IDENTITY=identity,
-            TEAMNAME="",
+            CONTACT="",
             LEADER="",
             MEMBER="",
             AWARD=""
@@ -73,10 +73,10 @@ class DeleteUser(CommandInterface):
         if len(args) != 1:
             return False
         key: str = ""
-        value: str = ""
+        value: Union[str, int] = ""
         value_name: str = ""
         if args[0].startswith("-id="):
-            key, value, value_name = "UID", args[0].split("-id=")[1], "id"
+            key, value, value_name = "UID", int(args[0].split("-id=")[1]), "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
         elif args[0].startswith("-email="):
@@ -110,10 +110,10 @@ class AddTag(CommandInterface):
         if len(args) != 2:
             return False
         key: str = ""
-        value: str = ""
+        value: Union[str, int] = ""
         value_name: str = ""
         if args[0].startswith("-id="):
-            key, value, value_name = "UID", args[0].split("-id=")[1], "id"
+            key, value, value_name = "UID", int(args[0].split("-id=")[1]), "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
         elif args[0].startswith("-email="):
@@ -154,10 +154,10 @@ class RemoveTag(CommandInterface):
         if len(args) != 2:
             return False
         key: str = ""
-        value: str = ""
+        value: Union[str, int] = ""
         value_name: str = ""
         if args[0].startswith("-id="):
-            key, value, value_name = "UID", args[0].split("-id=")[1], "id"
+            key, value, value_name = "UID", int(args[0].split("-id=")[1]), "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
         elif args[0].startswith("-email="):
@@ -201,10 +201,10 @@ class SetIdentity(CommandInterface):
         if len(args) != 2:
             return False
         key: str = ""
-        value: str = ""
+        value: Union[str, int] = ""
         value_name: str = ""
         if args[0].startswith("-id="):
-            key, value, value_name = "UID", args[0].split("-id=")[1], "id"
+            key, value, value_name = "UID", int(args[0].split("-id=")[1]), "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
         elif args[0].startswith("-email="):
@@ -238,10 +238,10 @@ class SetPassword(CommandInterface):
         if len(args) != 2:
             return False
         key: str = ""
-        value: str = ""
+        value: Union[str, int] = ""
         value_name: str = ""
         if args[0].startswith("-id="):
-            key, value, value_name = "UID", args[0].split("-id=")[1], "id"
+            key, value, value_name = "UID", int(args[0].split("-id=")[1]), "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
         elif args[0].startswith("-email="):
@@ -255,6 +255,42 @@ class SetPassword(CommandInterface):
         logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户更改 password ...</g>")
         interface.update("USER", where={key: ("==", value)}, TOKEN=b64encode(args[1].encode('utf-8')).decode('utf-8'))
         logger.opt(colors=True).info(f"<g>为 {value_name}=<y>{value}</y> 的用户更改 password 成功！</g>")
+        return True
+    
+
+class ShowPassword(CommandInterface):
+    @property
+    def command(self) -> str:
+        return "show-password"
+    
+    @property
+    def description(self) -> str:
+        return "展示解密后的密码"
+    
+    @property
+    def usage(self) -> str:
+        return "show-password -id=<uid> 或者 show-password -realname=<realname> 或者 show-password -email=<email>"
+    
+    @property
+    def execute(self, args: List[str]) -> bool:
+        if len(args) != 1:
+            return False
+        key: str = ""
+        value: Union[str, int] = ""
+        value_name: str = ""
+        if args[0].startswith("-id="):
+            key, value, value_name = "UID", int(args[0].split("-id=")[1]), "id"
+        elif args[0].startswith("-realname="):
+            key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
+        elif args[0].startswith("-email="):
+            key, value, value_name = "EMAIL", args[0].split("-email=")[1], "email"
+        else:
+            return False
+        query_user = interface.select_first("USER", where={key: ("==", value)})
+        if query_user is None:
+            logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户查找 password 失败：用户不存在！</r>")
+            return True
+        console.print(b64decode(query_user[Index.TOKEN].encode("utf-8")).decode("utf-8"), style="bold green")
         return True
     
 
@@ -275,10 +311,10 @@ class SetRealname(CommandInterface):
         if len(args) != 2:
             return False
         key: str = ""
-        value: str = ""
+        value: Union[str, int] = ""
         value_name: str = ""
         if args[0].startswith("-id="):
-            key, value, value_name = "UID", args[0].split("-id=")[1], "id"
+            key, value, value_name = "UID", int(args[0].split("-id=")[1]), "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
         elif args[0].startswith("-email="):
@@ -312,10 +348,10 @@ class SetName(CommandInterface):
         if len(args) != 2:
             return False
         key: str = ""
-        value: str = ""
+        value: Union[str, int] = ""
         value_name: str = ""
         if args[0].startswith("-id="):
-            key, value, value_name = "UID", args[0].split("-id=")[1], "id"
+            key, value, value_name = "UID", int(args[0].split("-id=")[1]), "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
         elif args[0].startswith("-email="):
@@ -332,28 +368,94 @@ class SetName(CommandInterface):
         return True
     
 
+class ListRequests(CommandInterface):
+    def command(self) -> str:
+        return "list-requests"
+    
+    def description(self) -> str:
+        return "列出所有的注册请求"
+    
+    def usage(self) -> str:
+        return "list-requests"
+    
+    def execute(self, args: List[str]) -> bool:
+        all = interface.select_all("PENDING_REQUEST")
+        table: Table = Table(show_header=True, header_style="bold green")
+        table.add_column("编号", justify="left", style="bold yellow")
+        table.add_column("名称", justify="left")
+        table.add_column("学校", justify="left", style="blue")
+        table.add_column("邮箱", justify="left", style="green")
+        table.add_column("电话", justify="left", style="yellow")
+        table.add_column("身份", justify="left", style="green")
+        table.add_column("联系人", justify="left", style="bold blue")
+        for request in all:
+            table.add_row(
+                request[Index.RID],
+                request[Index.NAME],
+                request[Index.SCHOOL],
+                request[Index.EMAIL],
+                request[Index.TEL],
+                request[Index.IDENTITY],
+                request[Index.CONTACT]
+            )
+        console.print(table)
+        return True
+    
+
+class AcceptRequest(CommandInterface):
+    def command(self) -> str:
+        return "accept-request"
+    
+    def description(self) -> str:
+        return "通过一个注册请求，自动创建一个账号并通过邮件告知用户"
+    
+    def usage(self) -> str:
+        return "accept-request -id=<rid>"
+    
+    def execute(self, args: List[str]) -> bool:
+        if len(args) != 1 or not args[0].startswith("-id="):
+            return False
+        rid: int = int(args[0].split("-id=")[1])
+        # TODO
+        return True
+
+
+class RejectRequest(CommandInterface):
+    def command(self) -> str:
+        return "reject-request"
+    
+    def description(self) -> str:
+        return "拒绝一个注册请求，通过邮件告知用户"
+    
+    def usage(self) -> str:
+        return "reject-request -id=<rid>"
+    
+    def execute(self, args: List[str]) -> bool:
+        if len(args != 1) or not args[0].startswith("-id="):
+            return False
+        rid: int = int(args[0].split("-id=")[1])
+        # TODO
+        return True
+    
+
 class UserInfo(CommandInterface):
     @staticmethod
     def print_user(user: List[Any]) -> None:
-        console.print("UID: ", style="bold blue", end="")
-        console.print(f"{user[Index.UID]}", style="yellow")
-        console.print(f"NAME: ", style="bold blue", end="")
-        console.print(f"{user[Index.NAME]}", style="yellow")
-        console.print(f"REALNAME: ", style="bold blue", end="")
-        console.print(f"{user[Index.REALNAME]}", style="yellow")
-        console.print(f"EMAIL: ", style="bold blue", end="")
-        console.print(f"{user[Index.EMAIL]}", style="yellow")
-        console.print(f"TOKEN: ", style="bold blue", end="")
-        console.print(f"{user[Index.TOKEN]}", style="yellow")
-        console.print(f"TAGS: ", style="bold blue", end="")
-        console.print(f"{user[Index.TAGS]}", style="yellow")
-        console.print(f"IDENTITY: ", style="bold blue", end="")
-        console.print(f"{user[Index.IDENTITY]}", style="yellow")
+        table: Table = Table(show_header=True, header_style="bold green")
+        table.add_column("字段", justify="left", style="bold green")
+        table.add_column("值", justify="left", style="yellow")
+        table.add_row("编号", user[Index.UID])
+        table.add_row("名称", user[Index.NAME])
+        table.add_row("标识", user[Index.REALNAME])
+        table.add_row("邮箱", user[Index.EMAIL])
+        table.add_row("密码(加密)", user[Index.TOKEN])
+        table.add_row("标签", user[Index.TAGS])
+        table.add_row("身份", user[Index.IDENTITY])
         if user[Index.IDENTITY] == "Team":
-            console.print(f"LEADER: ", style="bold blue", end="")
-            console.print(f"{user[Index.LEADER]}", style="yellow")
-            console.print(f"MEMBER: ", style="bold blue", end="")
-            console.print(f"{user[Index.MEMBER]}", style="yellow")
+            table.add_row("联系人", user[Index.CONTACT])
+            table.add_row("领队", user[Index.LEADER])
+            table.add_row("队员", user[Index.MEMBER])
+        console.print(table)
 
     @property
     def command(self) -> str:
@@ -371,10 +473,10 @@ class UserInfo(CommandInterface):
         if len(args) != 1:
             return False
         key: str = ""
-        value: str = ""
+        value: Union[str, int] = ""
         value_name: str = ""
         if args[0].startswith("-id="):
-            key, value, value_name = "UID", args[0].split("-id=")[1], "id"
+            key, value, value_name = "UID", int(args[0].split("-id=")[1]), "id"
         elif args[0].startswith("-realname="):
             key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
         elif args[0].startswith("-email="):
@@ -405,12 +507,12 @@ class ListTeams(CommandInterface):
     def execute(self, args: List[str]) -> bool:
         teams = interface.select_all("USER", where={"IDENTITY": ("==", "Team")})
         table: Table = Table(show_header=True, header_style="bold green")
-        table.add_column("UID", justify="left")
-        table.add_column("NAME", justify="left")
-        table.add_column("REALNAME", justify="left")
-        table.add_column("EMAIL", justify="left")
-        table.add_column("TAGS", justify="left")
-        table.add_column("IDENTITY", justify="left")
+        table.add_column("编号", justify="left", style="bold yellow")
+        table.add_column("队名", justify="left")
+        table.add_column("标识", justify="left", style="blue")
+        table.add_column("邮箱地址", justify="left", style="green")
+        table.add_column("标签", justify="left", style="yellow")
+        table.add_column("联系人", justify="left", style="green")
         for team in teams:
             table.add_row(
                 team[Index.UID],
@@ -418,7 +520,7 @@ class ListTeams(CommandInterface):
                 team[Index.REALNAME],
                 team[Index.EMAIL],
                 team[Index.TAGS],
-                team[Index.IDENTITY]
+                team[Index.CONTACT]
             )
         console.print(table)
         return True
@@ -442,12 +544,12 @@ class ListVolunteers(CommandInterface):
             return False
         volunteers = interface.select_all("USER", where={"IDENTITY": ("==", "Volunteer" + args[0].split("-type=")[1])})
         table: Table = Table(show_header=True, header_style="bold green")
-        table.add_column("UID", justify="left")
-        table.add_column("NAME", justify="left")
-        table.add_column("REALNAME", justify="left")
-        table.add_column("EMAIL", justify="left")
-        table.add_column("TAGS", justify="left")
-        table.add_column("IDENTITY", justify="left")
+        table.add_column("编号", justify="left", style="bold yellow")
+        table.add_column("名称", justify="left")
+        table.add_column("标识", justify="left", style="blue")
+        table.add_column("邮箱地址", justify="left", style="green")
+        table.add_column("标签", justify="left", style="yellow")
+        table.add_column("身份", justify="left", style="green")
         for volunteer in volunteers:
             table.add_row(
                 volunteer[Index.UID],
@@ -477,12 +579,12 @@ class ListAll(CommandInterface):
     def execute(self, args: List[str]) -> bool:
         all = interface.select_all("USER")
         table: Table = Table(show_header=True, header_style="bold green")
-        table.add_column("UID", justify="left")
-        table.add_column("NAME", justify="left")
-        table.add_column("REALNAME", justify="left")
-        table.add_column("EMAIL", justify="left")
-        table.add_column("TAGS", justify="left")
-        table.add_column("IDENTITY", justify="left")
+        table.add_column("编号", justify="left", style="bold yellow")
+        table.add_column("名称", justify="left")
+        table.add_column("标识", justify="left", style="blue")
+        table.add_column("邮箱", justify="left", style="green")
+        table.add_column("标签", justify="left", style="yellow")
+        table.add_column("身份", justify="left", style="green")
         for user in all:
             table.add_row(
                 user[Index.UID],

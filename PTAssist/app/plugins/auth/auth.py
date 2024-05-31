@@ -1,11 +1,12 @@
 import time
 
+from math import ceil
 from flask import request, session
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional
 from random import randint
 from functools import reduce
 
-from . import main, interface, encrypter, Index
+from . import main, interface, encrypter, Index, next_rid
 from ...manager import warn, suc, err
 from ..utils.email.email import send_mail
 
@@ -45,15 +46,15 @@ def verify_email() -> Tuple[Dict[str, Any], int]:
 
     email = request.json["email"]
     captcha = reduce(lambda x, y: x + y, [str(randint(0, 9)) for i in range(6)])
-    email_msg = f"尊敬的用户，您好：\n\n\t您正在通过 PTAssist 平台进行邮箱验证操作，本次验证码为 {captcha} (为了保证您的账户安全性，请您尽快完成验证！)\n为了保证账户安全，请勿泄露此验证码。\n祝在之后的比赛中收获愉快！\n(这是一封自动发送的邮件，请不要回复！)\n"
+    email_msg = f"尊敬的用户，您好：\n\n\t您正在通过 NYPT 平台进行邮箱验证操作，本次验证码为 {captcha} (为了保证您的账户安全性，请您尽快完成验证！)\n为了保证账户安全，请勿泄露此验证码。\n祝在之后的比赛中收获愉快！\n(这是一封自动发送的邮件，请不要回复！)\n"
     if (last_time := session.get("last_captcha_time")) is not None and (time_left := timeout - (time.time() - last_time)) > 0.0:
         warn("POST", "/auth/verify", f"400 Bad Request: 请在 {time_left} 秒后再发送验证码！")
         return {
-            "time_left": {time_left},
-            "msg": f"请在 {time_left} 秒后再发送验证码！"
+            "time_left": {ceil(time_left)},
+            "msg": f"请在 {ceil(time_left)} 秒后再发送验证码！"
         }, 400
     if send_mail(
-        target=email, sender_name="PTAssist",
+        target=email, sender_name="NYPT",
         title="验证邮件", msg=email_msg
     ):
         session["captcha"] = captcha
@@ -99,7 +100,7 @@ def logout() -> Tuple[Dict[str, Any], int]:
     }, 400
 
 
-@main.route("/auth/login/userpass", methods=["POST"])
+@main.route("/auth/login", methods=["POST"])
 def login() -> Tuple[Dict[str, Any], int]:
     """登录，在 session 中保存登录信息
 
@@ -121,53 +122,83 @@ def login() -> Tuple[Dict[str, Any], int]:
     if try_fetch is not None:
         fetch_result = try_fetch[Index.TOKEN]
     if fetch_result is None:
-        warn("POST", "/auth/login/userpass", f"400 Bad Request: 未找到名为 {user_name} 的用户！")
+        warn("POST", "/auth/login", f"400 Bad Request: 未找到名为 {user_name} 的用户！")
         return {
             "msg": "用户名不存在！"
         }, 400
     if encrypter(fetch_result, user_salt) != user_token:
-        warn("POST", "/auth/login/userpass", "400 Bad Request: 密码错误！")
+        warn("POST", "/auth/login", "400 Bad Request: 密码错误！")
         return {
             "msg": "密码错误！"
         }, 400
     session["user_id"] = try_fetch[Index.UID]
-    suc("POST", "/auth/login/userpass", "200 OK")
+    suc("POST", "/auth/login", "200 OK")
     return {}, 200
 
 
-@main.route("/auth/login/emailpass", methods=["POST"])
-def login() -> Tuple[Dict[str, Any], int]:
-    """登录，在 session 中保存登录信息
+@main.route("/auth/register")
+def register() -> Tuple[Dict[str, Any], int]:
+    """注册，收到注册请求并加入 PENDING_REQUEST
 
-    POST 表单信息:
+    POST 表单信息：
     {
-        "email": str(对应数据表中的 EMAIL)
-        "token": str(双层加密后的密码)
-        "salt": str(加密密码中加的盐)
+        "school": str(学校名称)
+        "name": str(队伍名称或志愿者名称)
+        "email": str(邮箱地址)
+        "tel": str(电话号码)
+        "identity": str(用户身份)
+        "captcha": str(验证码)
+        "contact": str(联系人姓名，identity为Team时才存在)
     }
 
     Returns:
         Tuple[Dict[str, Any], int]: 成功返回状态码 200(OK)，否则返回 400(Bad Request)
     """
-    user_email: str = request.json["email"]
-    user_token: str = request.json["token"]
-    user_salt: str = request.json["salt"]
-    try_fetch = interface.select_first("USER", where={"EMAIL": ("==", user_email)})
-    fetch_result = None
-    if try_fetch is not None:
-        fetch_result = try_fetch[Index.TOKEN]
-    if fetch_result is None:
-        warn("POST", "/auth/login/emailpass", f"400 Bad Request: 未找到邮箱为 {user_email} 的用户！")
+    school: str = request.json["school"]
+    name: str = request.json["name"]
+    email: str = request.json["email"]
+    tel: str = request.json["tel"]
+    identity: str = request.json["identity"]
+    captcha: str = request.json["captcha"]
+    contact: str = ""
+    if identity == "Team":
+        contact = request.json["contact"]
+    session_captcha: Optional[str] = session.get("captcha")
+    session_email: Optional[str] = session.get("email")
+    if session_captcha is None:
+        warn("POST", "/auth/register", "400 Bad Request: 未找到验证码！")
         return {
-            "msg": "邮箱不存在！"
+            "msg": "未进行邮箱验证！"
         }, 400
-    if encrypter(fetch_result, user_salt) != user_token:
-        warn("POST", "/auth/login/emailpass", "400 Bad Request: 密码错误！")
+    session.pop("captcha")
+    session.pop("last_captcha_time")
+    session.pop("email")
+    if captcha != session_captcha:
+        warn("POST", "/auth/register", "400 Bad Request: 验证码错误！")
         return {
-            "msg": "密码错误！"
+            "msg": "验证码错误！"
         }, 400
-    session["user_id"] = try_fetch[Index.UID]
-    suc("POST", "/auth/login/emailpass", "200 OK")
+    if email != session_email:
+        warn("POST", "/auth/register", "400 Bad Request: 邮箱和验证邮箱不相符！")
+        return {
+            "msg": "邮箱和验证邮箱不相符！"
+        }, 400
+    email_result = interface.select_all("USER", where={"EMAIL": ("==", email)})
+    if email_result is not None and len(email_result) > 0:
+        warn("POST", "/auth/register", "400 Bad Request: 该邮箱已经存在！")
+        return {
+            "msg": "该邮箱已经被注册过！"
+        }, 400
+    rid: int = next_rid()
+    interface.insert("PENDING_REQUEST",
+        RID=rid,
+        NAME=name,
+        SCHOOL=school,
+        EMAIL=email,
+        TEL=tel,
+        IDENTITY=identity,
+        CONTACT=contact
+    )
     return {}, 200
 
 
@@ -183,6 +214,7 @@ def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
     email:      EMAIL
     tags:       TAGS
     identity:   IDENTITY
+    contact:    CONTACT
     leader:     LEADER
     member:     MEMBER
     award:      AWARD
@@ -229,6 +261,10 @@ def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
             return {
                 "identity": fetch_result[Index.IDENTITY]
             }, 200
+        case "contact":
+            return {
+                "contact": fetch_result[Index.CONTACT]
+            }, 200
         case "leader":
             return {
                 "leader": fetch_result[Index.LEADER]
@@ -249,6 +285,7 @@ def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
                 "email": fetch_result[Index.EMAIL],
                 "tags": fetch_result[Index.TAGS],
                 "identity": fetch_result[Index.IDENTITY],
+                "contact": fetch_result[Index.CONTACT],
                 "leader": fetch_result[Index.LEADER],
                 "member": fetch_result[Index.MEMBER],
             }, 200

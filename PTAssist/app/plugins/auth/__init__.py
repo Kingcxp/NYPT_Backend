@@ -8,6 +8,7 @@ from ..utils.database.database import Interface, Article
 
 
 interface = Interface(os.path.dirname(os.path.abspath(__file__)), "auth_database")
+
 """
 表: USER
 
@@ -19,10 +20,20 @@ EMAIL: 联系人邮箱，唯一标识
 TOKEN: 用户密码(base64编码)
 TAGS: 用户标签
 IDENTITY: 用户身份
-TEAMNAME: 队伍名称(身份非队伍无效)
+CONTACT: 联系人名称(身份非队伍无效)
 LEADER: 领队信息(身份非队伍无效)格式：姓名 - 性别 - 手机号 - 身份证号 - 学院 - 专业 - QQ - 邮箱
 MEMBER: 队员信息(身份非队伍无效)格式同领队信息，每个队员用 ' | ' 隔开
 AWARD: 奖项信息(身份非队伍无效)
+
+表: PENDING_REQUEST
+
+字段: 
+RID: 请求编号，唯一标识
+NAME: 队伍名
+SCHOOL: 学校名称
+EMAIL: 联系人邮箱，唯一标识
+TEL: 电话号码
+IDENTITY: 用户身份
 """
 interface.create_table("USER", {
     "UID": int,
@@ -31,6 +42,7 @@ interface.create_table("USER", {
     "EMAIL": str,
     "TOKEN": str,
     "IDENTITY": str,
+    "CONTACT": str,
     "TAGS": str,
     "LEADER": str,
     "MEMBER": str,
@@ -42,7 +54,8 @@ interface.create_table("PENDING_REQUEST", {
     "SCHOOL": str,
     "EMAIL": str,
     "TEL": str,
-    "IDENTITY": str
+    "IDENTITY": str,
+    "CONTACT": str
 })
 class Index(Enum):
     UID         = 0
@@ -51,10 +64,11 @@ class Index(Enum):
     EMAIL       = 3
     TOKEN       = 4
     IDENTITY    = 5
-    TAGS        = 6
-    LEADER      = 7
-    MEMBER      = 8
-    AWARD       = 9
+    CONTACT     = 6
+    TAGS        = 7
+    LEADER      = 8
+    MEMBER      = 9
+    AWARD       = 10
 
     RID         = 0
     SCHOOL      = 2
@@ -84,8 +98,20 @@ def next_uid() -> int:
     """
     uid_now: int = interface.select_scalar("USER", order_by="UID", is_desc=True)
     if uid_now == None:
-        uid_now = 10000
+        uid_now = 1
     return uid_now + 1
+
+
+def next_rid() -> int:
+    """获得数据库中下一个未被占用过的 rid
+
+    Returns:
+        int: 下一个未被占用过的 rid
+    """
+    rid_now: int = interface.select_scalar("PENDING_REQUEST", order_by="RID", is_desc=True)
+    if rid_now == None:
+        rid_now = 1
+    return rid_now + 1
 
 
 from .commands import *

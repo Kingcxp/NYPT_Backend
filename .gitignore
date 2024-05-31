@@ -5,6 +5,4 @@ flask_session/
 
 # Only for test uses. Will be removed by deployment.
 *.sqlite
-
-# In case you'll need to make some tests.
-__test__/
+*.db
