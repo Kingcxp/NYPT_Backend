@@ -223,7 +223,7 @@ command:
 description:
     拒绝指定的请求，并通过邮件告知用户
 usage:
-    reject-request
+    reject-request -id=<rid> [拒绝理由]
 output:
     指令是否执行成功及错误原因
 

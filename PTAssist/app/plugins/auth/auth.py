@@ -7,6 +7,7 @@ from random import randint
 from functools import reduce
 
 from . import main, interface, encrypter, Index, next_rid
+from .config import Config
 from ...manager import warn, suc, err
 from ..utils.email.email import send_mail
 
@@ -46,7 +47,6 @@ def verify_email() -> Tuple[Dict[str, Any], int]:
 
     email = request.json["email"]
     captcha = reduce(lambda x, y: x + y, [str(randint(0, 9)) for i in range(6)])
-    email_msg = f"尊敬的用户，您好：\n\n\t您正在通过 NYPT 平台进行邮箱验证操作，本次验证码为 {captcha} (为了保证您的账户安全性，请您尽快完成验证！)\n为了保证账户安全，请勿泄露此验证码。\n祝在之后的比赛中收获愉快！\n(这是一封自动发送的邮件，请不要回复！)\n"
     if (last_time := session.get("last_captcha_time")) is not None and (time_left := timeout - (time.time() - last_time)) > 0.0:
         warn("POST", "/auth/verify", f"400 Bad Request: 请在 {time_left} 秒后再发送验证码！")
         return {
@@ -55,7 +55,7 @@ def verify_email() -> Tuple[Dict[str, Any], int]:
         }, 400
     if send_mail(
         target=email, sender_name="NYPT",
-        title="验证邮件", msg=email_msg
+        title="验证邮件", msg=Config.verify_msg % captcha
     ):
         session["captcha"] = captcha
         session["last_captcha_time"] = time.time()
@@ -199,6 +199,7 @@ def register() -> Tuple[Dict[str, Any], int]:
         IDENTITY=identity,
         CONTACT=contact
     )
+    suc("POST", "/auth/register", "200 OK")
     return {}, 200
 
 

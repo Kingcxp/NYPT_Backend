@@ -97,10 +97,44 @@ def next_uid() -> int:
         int: 下一个未被占用过的 uid
     """
     uid_now: int = interface.select_scalar("USER", order_by="UID", is_desc=True)
-    if uid_now == None:
+    if uid_now is None:
         uid_now = 1
     return uid_now + 1
 
+
+def next_team() -> str:
+    """获得数据库中下一个 team 编号
+
+    Returns:
+        int: 下一个 team 编号
+    """
+    team_now: List[Any] = interface.select_first("USER", where={"IDENTITY": ("==", "Team")}, order_by="REALNAME", is_desc=True)
+    team_name: str = ""
+    if team_now is None:
+        team_name = "team001"
+    else:
+        team_id: int = int(team_now[Index.REALNAME].split("team")[1]) + 1
+        team_name = ("team%03d" % team_id)
+    return team_name
+
+
+def next_volunteer(type: str) -> str:
+    """获得数据库中下一个 volunteer 编号
+
+    Args:
+        type (str): 志愿者类型
+
+    Returns:
+        int: 下一个 volunteer 编号
+    """
+    volunteer_now: List[Any] = interface.select_first("USER", where={"IDENTITY": ("==", f"Volunteer{type.upper()}")}, order_by="REALNAME", is_desc=True)
+    volunteer_name: str = ""
+    if volunteer_now is None:
+        volunteer_name = f"volunteer-{type.lower()}001"
+    else:
+        volunteer_id: int = int(volunteer_now[Index.REALNAME].split(f"volunteer-{type.lower()}")[1]) + 1
+        volunteer_name = (f"volunteer-{type.lower()}" + "%03d" % volunteer_id)
+    return volunteer_name
 
 def next_rid() -> int:
     """获得数据库中下一个未被占用过的 rid
@@ -109,7 +143,7 @@ def next_rid() -> int:
         int: 下一个未被占用过的 rid
     """
     rid_now: int = interface.select_scalar("PENDING_REQUEST", order_by="RID", is_desc=True)
-    if rid_now == None:
+    if rid_now is None:
         rid_now = 1
     return rid_now + 1
 

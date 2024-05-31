@@ -1,9 +1,29 @@
 from base64 import b64encode, b64decode
-from typing import List, Any, Union
+from typing import List, Any, Union, Optional
+from random import randint
+from functools import reduce
 from rich.table import Table
 
-from . import interface, next_uid, Index
+from . import interface, next_uid, Index, next_team, next_volunteer
+from .config import Config
+from ..utils.email.email import send_mail
 from ...manager import CommandInterface, logger, console
+
+
+def generate_password(length: int, keyring: str = "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM") -> str:
+    """生成一个随机密码
+
+    Args:
+        length (int): 密码长度
+        keyring (str): 密码字符的所有备选项
+
+    Returns:
+        str: 生成的密码
+    """
+    return reduce(
+        lambda x, y: x + y,
+        [keyring[randint(0, len(keyring) - 1)] for _ in range(length)]
+    )
 
 
 class NewUser(CommandInterface):
@@ -416,7 +436,50 @@ class AcceptRequest(CommandInterface):
         if len(args) != 1 or not args[0].startswith("-id="):
             return False
         rid: int = int(args[0].split("-id=")[1])
-        # TODO
+        request = interface.select_first("PENDING_REQUEST", where={"RID": ("==", rid)})
+        if request is None:
+            logger.opt(colors=True).info(f"<r>获取 <y>id={rid}</y> 的请求信息失败：请求不存在！</r>")
+            return True
+        email = request[Index.EMAIL]
+        email_query = interface.select_first("USER", where={"EMAIL": ("==", email)})
+        if email_query is not None:
+            logger.opt(colors=True).info(f"<r><y>email={email}</y> 的用户已经存在！</r>")
+        realname: Optional[str] = None
+        password: Optional[str] = None
+        match request[Index.IDENTITY]:
+            case "Team":
+                realname = next_team()
+                password = generate_password(Config.team_pwd_len)
+            case "VolunteerA":
+                realname = next_volunteer("A")
+                password = generate_password(Config.volunteer_a_pwd_len)
+            case "VolunteerB":
+                realname = next_volunteer("B")
+                password = generate_password(Config.volunteer_b_pwd_len)
+            case _:
+                logger.opt(colors=True).info(f"<r>这是什么身份？不应该有这种身份！你只能拒绝它！</r>")
+                return True
+        interface.insert("USER",
+            UID=next_uid(),
+            NAME=request[Index.NAME],
+            REALNAME=realname,
+            EMAIL=email,
+            TOKEN=b64encode(password.encode("utf-8")).decode("utf-8"),
+            IDENTITY=request[Index.IDENTITY],
+            TAGS="",
+            CONTACT=request[Index.CONTACT],
+            LEADER="",
+            MEMBER="",
+            AWARD=""
+        )
+        if not send_mail(
+            target=email, sender_name="NYPT",
+            title="您的注册申请已经通过！", msg=Config.accepted_msg % (realname, password)
+        ):
+            logger.opt(colors=True).info(f"<r>发送邮件发生错误！请尝试重新通过申请！</r>")
+            return True
+        interface.delete("PENDING_REQUEST", where={"RID": ("==", rid)})
+        logger.opt(colors=True).info(f"<g>已经通过该注册请求！</g>")
         return True
 
 
@@ -428,13 +491,26 @@ class RejectRequest(CommandInterface):
         return "拒绝一个注册请求，通过邮件告知用户"
     
     def usage(self) -> str:
-        return "reject-request -id=<rid>"
+        return "reject-request -id=<rid> [拒绝理由]"
     
     def execute(self, args: List[str]) -> bool:
         if len(args != 1) or not args[0].startswith("-id="):
             return False
         rid: int = int(args[0].split("-id=")[1])
-        # TODO
+        args = args[1:]
+        request = interface.select_first("PENDING_REQUEST", where={"RID": ("==", rid)})
+        if request is None:
+            logger.opt(colors=True).info(f"<r>获取 <y>id={rid}</y> 的请求信息失败：请求不存在！</r>")
+            return True
+        email = request[Index.EMAIL]
+        if not send_mail(
+            target=email, sender_name="NYPT",
+            title="您的注册请求被拒绝！", msg=Config.rejected_msg % ("".join(args))
+        ):
+            logger.opt(colors=True).info(f"<r>发送邮件发生错误！请尝试重新拒绝申请！</r>")
+            return True
+        interface.delete("PENDING_REQUEST", where={"RID": ("==", rid)})
+        logger.opt(colors=True).info(f"<g>已经拒绝该注册请求！</g>")
         return True
     
 
