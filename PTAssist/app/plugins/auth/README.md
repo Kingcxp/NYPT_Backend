@@ -27,7 +27,6 @@ output:
         # msg: 错误信息
         {msg: str}
 
-
 route:
     /auth/logout
 method:
