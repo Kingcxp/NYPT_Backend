@@ -98,7 +98,7 @@ def next_uid() -> int:
     """
     uid_now: int = interface.select_scalar("USER", order_by="UID", is_desc=True)
     if uid_now is None:
-        uid_now = 1
+        uid_now = 0
     return uid_now + 1
 
 
@@ -144,7 +144,7 @@ def next_rid() -> int:
     """
     rid_now: int = interface.select_scalar("PENDING_REQUEST", order_by="RID", is_desc=True)
     if rid_now is None:
-        rid_now = 1
+        rid_now = 0
     return rid_now + 1
 
 
@@ -160,8 +160,13 @@ __commands__ = [
     RemoveTag(),
     SetIdentity(),
     SetPassword(),
+    ShowPassword(),
     SetRealname(),
     SetName(),
+    ListRequests(),
+    AcceptRequest(),
+    RejectRequest(),
+    UserInfo(),
     ListTeams(),
     ListVolunteers(),
     ListAll()

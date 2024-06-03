@@ -144,7 +144,7 @@ class AddTag(CommandInterface):
         if query_user is None:
             logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户添加 tag 失败：用户不存在！</r>")
             return True
-        tags: str = query_user[Index.TAGS]
+        tags: str = query_user[Index.TAGS.value]
         if args[1] in tags:
             logger.opt(colors=True).info(f"<b>为 {value_name}=<y>{value}</y> 的用户添加 tag 失败：用户已经拥有该标签！</b>")
         logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户添加 tag ...</g>")
@@ -188,7 +188,7 @@ class RemoveTag(CommandInterface):
         if query_user is None:
             logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户移除 tag 失败：用户不存在！</r>")
             return True
-        tags: str = query_user[Index.TAGS]
+        tags: str = query_user[Index.TAGS.value]
         if args[1] not in tags:
             logger.opt(colors=True).info(f"<b>为 {value_name}=<y>{value}</y> 的用户移除 tag 失败：用户未拥有该标签！</b>")
         logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户移除 tag ...</g>")
@@ -291,7 +291,6 @@ class ShowPassword(CommandInterface):
     def usage(self) -> str:
         return "show-password -id=<uid> 或者 show-password -realname=<realname> 或者 show-password -email=<email>"
     
-    @property
     def execute(self, args: List[str]) -> bool:
         if len(args) != 1:
             return False
@@ -310,7 +309,7 @@ class ShowPassword(CommandInterface):
         if query_user is None:
             logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户查找 password 失败：用户不存在！</r>")
             return True
-        console.print(b64decode(query_user[Index.TOKEN].encode("utf-8")).decode("utf-8"), style="bold green")
+        console.print(b64decode(query_user[Index.TOKEN.value].encode("utf-8")).decode("utf-8"), style="bold green")
         return True
     
 
@@ -389,12 +388,15 @@ class SetName(CommandInterface):
     
 
 class ListRequests(CommandInterface):
+    @property
     def command(self) -> str:
         return "list-requests"
     
+    @property
     def description(self) -> str:
         return "列出所有的注册请求"
     
+    @property
     def usage(self) -> str:
         return "list-requests"
     
@@ -410,25 +412,28 @@ class ListRequests(CommandInterface):
         table.add_column("联系人", justify="left", style="bold blue")
         for request in all:
             table.add_row(
-                request[Index.RID],
-                request[Index.NAME],
-                request[Index.SCHOOL],
-                request[Index.EMAIL],
-                request[Index.TEL],
-                request[Index.IDENTITY],
-                request[Index.CONTACT]
+                str(request[Index.RID.value]),
+                str(request[Index.NAME.value]),
+                str(request[Index.SCHOOL.value]),
+                str(request[Index.EMAIL.value]),
+                str(request[Index.TEL.value]),
+                str(request[Index.IDENTITY.value]),
+                str(request[Index.CONTACT.value])
             )
         console.print(table)
         return True
     
 
 class AcceptRequest(CommandInterface):
+    @property
     def command(self) -> str:
         return "accept-request"
     
+    @property
     def description(self) -> str:
         return "通过一个注册请求，自动创建一个账号并通过邮件告知用户"
     
+    @property
     def usage(self) -> str:
         return "accept-request -id=<rid>"
     
@@ -440,13 +445,13 @@ class AcceptRequest(CommandInterface):
         if request is None:
             logger.opt(colors=True).info(f"<r>获取 <y>id={rid}</y> 的请求信息失败：请求不存在！</r>")
             return True
-        email = request[Index.EMAIL]
+        email = request[Index.EMAIL.value]
         email_query = interface.select_first("USER", where={"EMAIL": ("==", email)})
         if email_query is not None:
             logger.opt(colors=True).info(f"<r><y>email={email}</y> 的用户已经存在！</r>")
         realname: Optional[str] = None
         password: Optional[str] = None
-        match request[Index.IDENTITY]:
+        match request[Index.IDENTITY.value]:
             case "Team":
                 realname = next_team()
                 password = generate_password(Config.team_pwd_len)
@@ -461,13 +466,13 @@ class AcceptRequest(CommandInterface):
                 return True
         interface.insert("USER",
             UID=next_uid(),
-            NAME=request[Index.NAME],
+            NAME=request[Index.NAME.value],
             REALNAME=realname,
             EMAIL=email,
             TOKEN=b64encode(password.encode("utf-8")).decode("utf-8"),
-            IDENTITY=request[Index.IDENTITY],
+            IDENTITY=request[Index.IDENTITY.value],
             TAGS="",
-            CONTACT=request[Index.CONTACT],
+            CONTACT=request[Index.CONTACT.value],
             LEADER="",
             MEMBER="",
             AWARD=""
@@ -484,12 +489,15 @@ class AcceptRequest(CommandInterface):
 
 
 class RejectRequest(CommandInterface):
+    @property
     def command(self) -> str:
         return "reject-request"
     
+    @property
     def description(self) -> str:
         return "拒绝一个注册请求，通过邮件告知用户"
     
+    @property
     def usage(self) -> str:
         return "reject-request -id=<rid> [拒绝理由]"
     
@@ -502,7 +510,7 @@ class RejectRequest(CommandInterface):
         if request is None:
             logger.opt(colors=True).info(f"<r>获取 <y>id={rid}</y> 的请求信息失败：请求不存在！</r>")
             return True
-        email = request[Index.EMAIL]
+        email = request[Index.EMAIL.value]
         if not send_mail(
             target=email, sender_name="NYPT",
             title="您的注册请求被拒绝！", msg=Config.rejected_msg % ("".join(args))
@@ -520,17 +528,17 @@ class UserInfo(CommandInterface):
         table: Table = Table(show_header=True, header_style="bold green")
         table.add_column("字段", justify="left", style="bold green")
         table.add_column("值", justify="left", style="yellow")
-        table.add_row("编号", user[Index.UID])
-        table.add_row("名称", user[Index.NAME])
-        table.add_row("标识", user[Index.REALNAME])
-        table.add_row("邮箱", user[Index.EMAIL])
-        table.add_row("密码(加密)", user[Index.TOKEN])
-        table.add_row("标签", user[Index.TAGS])
-        table.add_row("身份", user[Index.IDENTITY])
-        if user[Index.IDENTITY] == "Team":
-            table.add_row("联系人", user[Index.CONTACT])
-            table.add_row("领队", user[Index.LEADER])
-            table.add_row("队员", user[Index.MEMBER])
+        table.add_row("编号", str(user[Index.UID.value]))
+        table.add_row("名称", str(user[Index.NAME.value]))
+        table.add_row("标识", str(user[Index.REALNAME.value]))
+        table.add_row("邮箱", str(user[Index.EMAIL.value]))
+        table.add_row("密码(加密)", str(user[Index.TOKEN.value]))
+        table.add_row("标签", str(user[Index.TAGS.value]))
+        table.add_row("身份", str(user[Index.IDENTITY.value]))
+        if user[Index.IDENTITY.value] == "Team":
+            table.add_row("联系人", str(user[Index.CONTACT.value]))
+            table.add_row("领队", str(user[Index.LEADER.value]))
+            table.add_row("队员", str(user[Index.MEMBER.value]))
         console.print(table)
 
     @property
@@ -591,12 +599,12 @@ class ListTeams(CommandInterface):
         table.add_column("联系人", justify="left", style="green")
         for team in teams:
             table.add_row(
-                team[Index.UID],
-                team[Index.NAME],
-                team[Index.REALNAME],
-                team[Index.EMAIL],
-                team[Index.TAGS],
-                team[Index.CONTACT]
+                str(team[Index.UID.value]),
+                str(team[Index.NAME.value]),
+                str(team[Index.REALNAME.value]),
+                str(team[Index.EMAIL.value]),
+                str(team[Index.TAGS.value]),
+                str(team[Index.CONTACT.value])
             )
         console.print(table)
         return True
@@ -628,12 +636,12 @@ class ListVolunteers(CommandInterface):
         table.add_column("身份", justify="left", style="green")
         for volunteer in volunteers:
             table.add_row(
-                volunteer[Index.UID],
-                volunteer[Index.NAME],
-                volunteer[Index.REALNAME],
-                volunteer[Index.EMAIL],
-                volunteer[Index.TAGS],
-                volunteer[Index.IDENTITY]
+                str(volunteer[Index.UID.value]),
+                str(volunteer[Index.NAME.value]),
+                str(volunteer[Index.REALNAME.value]),
+                str(volunteer[Index.EMAIL.value]),
+                str(volunteer[Index.TAGS.value]),
+                str(volunteer[Index.IDENTITY.value])
             )
         console.print(table)
         return True
@@ -663,12 +671,12 @@ class ListAll(CommandInterface):
         table.add_column("身份", justify="left", style="green")
         for user in all:
             table.add_row(
-                user[Index.UID],
-                user[Index.NAME],
-                user[Index.REALNAME],
-                user[Index.EMAIL],
-                user[Index.TAGS],
-                user[Index.IDENTITY]
+                str(user[Index.UID.value]),
+                str(user[Index.NAME.value]),
+                str(user[Index.REALNAME.value]),
+                str(user[Index.EMAIL.value]),
+                str(user[Index.TAGS.value]),
+                str(user[Index.IDENTITY.value])
             )
         console.print(table)
         return True

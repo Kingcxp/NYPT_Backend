@@ -120,7 +120,7 @@ def login() -> Tuple[Dict[str, Any], int]:
     try_fetch = interface.select_first("USER", where={"REALNAME": ("==", user_name)})
     fetch_result = None
     if try_fetch is not None:
-        fetch_result = try_fetch[Index.TOKEN]
+        fetch_result = try_fetch[Index.TOKEN.value]
     if fetch_result is None:
         warn("POST", "/auth/login", f"400 Bad Request: 未找到名为 {user_name} 的用户！")
         return {
@@ -131,12 +131,12 @@ def login() -> Tuple[Dict[str, Any], int]:
         return {
             "msg": "密码错误！"
         }, 400
-    session["user_id"] = try_fetch[Index.UID]
+    session["user_id"] = try_fetch[Index.UID.value]
     suc("POST", "/auth/login", "200 OK")
     return {}, 200
 
 
-@main.route("/auth/register")
+@main.route("/auth/register", methods=["POST"])
 def register() -> Tuple[Dict[str, Any], int]:
     """注册，收到注册请求并加入 PENDING_REQUEST
 
@@ -240,55 +240,55 @@ def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
     match which:
         case "user_id":
             return {
-                "user_id": fetch_result[Index.UID]
+                "user_id": fetch_result[Index.UID.value]
             }, 200
         case "user_name":
             return {
-                "user_name": fetch_result[Index.NAME]
+                "user_name": fetch_result[Index.NAME.value]
             }, 200
         case "real_name":
             return {
-                "real_name": fetch_result[Index.REALNAME]
+                "real_name": fetch_result[Index.REALNAME.value]
             }, 200
         case "email":
             return {
-                "email": fetch_result[Index.EMAIL]
+                "email": fetch_result[Index.EMAIL.value]
             }, 200
         case "tags":
             return {
-                "tags": fetch_result[Index.TAGS]
+                "tags": fetch_result[Index.TAGS.value]
             }, 200
         case "identity":
             return {
-                "identity": fetch_result[Index.IDENTITY]
+                "identity": fetch_result[Index.IDENTITY.value]
             }, 200
         case "contact":
             return {
-                "contact": fetch_result[Index.CONTACT]
+                "contact": fetch_result[Index.CONTACT.value]
             }, 200
         case "leader":
             return {
-                "leader": fetch_result[Index.LEADER]
+                "leader": fetch_result[Index.LEADER.value]
             }, 200
         case "member":
             return {
-                "member": fetch_result[Index.MEMBER]
+                "member": fetch_result[Index.MEMBER.value]
             }, 200
         case "award":
             return {
-                "award": fetch_result[Index.AWARD]
+                "award": fetch_result[Index.AWARD.value]
             }, 200
         case "all":
             return {
-                "user_id": fetch_result[Index.UID],
-                "user_name": fetch_result[Index.NAME],
-                "real_name": fetch_result[Index.REALNAME],
-                "email": fetch_result[Index.EMAIL],
-                "tags": fetch_result[Index.TAGS],
-                "identity": fetch_result[Index.IDENTITY],
-                "contact": fetch_result[Index.CONTACT],
-                "leader": fetch_result[Index.LEADER],
-                "member": fetch_result[Index.MEMBER],
+                "user_id": fetch_result[Index.UID.value],
+                "user_name": fetch_result[Index.NAME.value],
+                "real_name": fetch_result[Index.REALNAME.value],
+                "email": fetch_result[Index.EMAIL.value],
+                "tags": fetch_result[Index.TAGS.value],
+                "identity": fetch_result[Index.IDENTITY.value],
+                "contact": fetch_result[Index.CONTACT.value],
+                "leader": fetch_result[Index.LEADER.value],
+                "member": fetch_result[Index.MEMBER.value],
             }, 200
         case _:
             return {
