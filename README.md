@@ -5,6 +5,13 @@
 ## 介绍
 TODO
 
+## 测试运行项目
+```
+# 你应当在此之前先安装 python3 和 pip，或使用 python 的虚拟环境
+pip install -r requirements.txt
+python PTAssist/launcher.py
+```
+
 ## 软件架构
 本项目暂时为网络应用项目，目前分为前端、后端以及衍生项目  
 前端使用Node.js、Vue、Axios、Javascript、HTML、CSS、Element UI等组成成分，构建出造型美观，使用方便流畅的网页用户界面。  
@@ -22,7 +29,6 @@ Vue项目初始化导引：[菜鸟教程](https://www.runoob.com/vue3/vue3-insta
     Node版本在之后可能有更新的选择，可以在不影响项目构建的情况下安装更新的版本。
     对于Python安装：  
     建议[Python](https://www.python.org/downloads/)版本为python3.10.x或者python3.9.x，这两个版本更加稳定，且不包含3.11.x及其之后的一些软件包的破坏性更新。不过实际上版本可在一定范围内随意，能用即可  
-    ~~不建议配置docker~~
 
 ## 2. Chrome OS / Debian
     根据[Node.js Binary Distributions](https://github.com/nodesource/distributions)能找到，要安装Node.js LTS(v18.x)，对于Debian操作系统，需要执行如下指令：
@@ -67,52 +73,6 @@ Vue项目初始化导引：[菜鸟教程](https://www.runoob.com/vue3/vue3-insta
     ```
 
     来一键补全未安装的python软件包。
-
-    Docker安装：  
-    根据菜鸟教程，使用官方安装脚本自动安装：
-
-    ```sh
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh
-    ```
-
-    等待安装完成即可。
-
-    从容器镜像库获取Docker容器：（此后所有docker命令前可能需要sudo）  
-    首先登陆reg.nju.edu.cn：
-
-    ```sh
-    docker login reg.nju.edu.cn
-    ```
-
-    使用个人账号密码（需具有相关权限）或者令牌等均可。  
-    随后使用命令
-
-    ```sh
-    docker pull reg.nju.edu.cn/group/project:version
-    ```
-
-    来获取已经配置完好的Docker容器。  
-    之后使用：
-
-    ```sh
-    docker run -i -t reg.nju.edu.cn/group/project:version
-    ```
-
-    来运行获取到的Docker容器。
-    Docker容器的工作环境已经配置完成，之后的工作可在Docker容器中使用统一的环境配置进行。
-
-    Vim美化+功能优化配置：  
-    在这里我们选择安装vim-fast来让vim-fast尽可能接近vscode的效果。  
-    根据[Gitee vim-fast](https://gitee.com/mirrorvim/vim-fast)的README来安装配置完全不会有问题（当然我不知道root用户装会不会有问题）所以在此不赘述配置过程。  
-    介绍一下一些基础功能的打开方式：  
-    在NORMAL模式下按下`,n`打开资源管理器，可以像vscode一样自由浏览文件夹。  
-    在NORMAL模式下按下`,,t`打开一个纵向终端窗口，告别手动tmux。  
-    在NORMAL模式下按下`,,T`打开一个横向终端窗口，即与vscode完全一致的终端位置。  
-    所有的窗口都可以通过鼠标拖动缩放，鼠标右键添加了复制粘贴等功能。  
-    其它功能我也不会，自行摸索，原版vim所有的快捷键均仍适用。  
-    ~~界面主题可修改但我不会。~~  
-    ~~Vue的代码补全我也不会配置。~~
 
 ## 使用说明
 因为一些成员可能是第一次使用Git进行多人协作项目，因此，在此我们以TestGit(<https://gitee.com/kingcq2004/test-git.git)测试仓库为例详细解释一下步骤：>  
