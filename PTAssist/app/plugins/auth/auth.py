@@ -148,7 +148,7 @@ def register() -> Tuple[Dict[str, Any], int]:
         "tel": str(电话号码)
         "identity": str(用户身份)
         "captcha": str(验证码)
-        "contact": str(联系人姓名，identity为Team时才存在)
+        "contact": str(联系人姓名，identity为Team时才有效)
     }
 
     Returns:
