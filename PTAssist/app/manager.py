@@ -38,7 +38,7 @@ def suc(method: Literal["GET", "POST"], router: str, msg: str):
 
 
 def err(method: Literal["GET", "POST"], router: str, msg: str):
-    logger.opt(colors=True).success(f"<y>{method}</y> '{router}' <r>{msg}</r>")
+    logger.opt(colors=True).error(f"<y>{method}</y> '{router}' <r>{msg}</r>")
 
 
 def escape_tag(s: str) -> str:

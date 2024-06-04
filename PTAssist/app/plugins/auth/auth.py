@@ -229,7 +229,7 @@ def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
     Returns:
         Tuple[Dict[str, Any], int]: 成功返回用户信息及状态码 200(OK)，否则返回 400(Bad Request) 或 404(Not Found) 或 500(Internal Server Error)，视情况而定
     """
-    if user_id := session.get("user_id") is None:
+    if (user_id := session.get("user_id")) is None:
         warn("GET", "/auth/userdata", "400 Bad Request: 用户未登录！")
         return {
             "msg": "您尚未登录！"
