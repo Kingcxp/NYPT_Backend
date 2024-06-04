@@ -10,7 +10,7 @@ class SystemInfo(CommandInterface):
     
     @property
     def description(self) -> str:
-        return "Get system information"
+        return "获取系统信息"
     
     @property
     def usage(self) -> str:

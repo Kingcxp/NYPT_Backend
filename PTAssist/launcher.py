@@ -118,8 +118,8 @@ class ListCommands(CommandInterface):
     
     def execute(self, args: List[str]) -> bool:
         table: Table = Table(show_header=True, header_style="bold green")
-        table.add_column("command", justify="left")
-        table.add_column("description", justify="left")
+        table.add_column("command", justify="left", style="bold yellow")
+        table.add_column("description", justify="left", style="bold blue")
         for command in command_manager.commands.keys():
             table.add_row(command, command_manager.commands_descriptions_and_usages[command][0])
         console.print(table)
