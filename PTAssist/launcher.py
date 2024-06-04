@@ -46,7 +46,7 @@ class HelpCommand(CommandInterface):
     
     @property
     def description(self) -> str:
-        return 'Show help.'
+        return '展示帮助信息'
     
     @property
     def usage(self) -> str:
@@ -69,7 +69,7 @@ class InfoCommand(CommandInterface):
     
     @property
     def description(self) -> str:
-        return 'Show system and version info.'
+        return '展示系统和版本信息'
     
     @property
     def usage(self) -> str:
@@ -92,7 +92,7 @@ class ClearCommand(CommandInterface):
     
     @property
     def description(self) -> str:
-        return 'Clear screen.'
+        return '清除屏幕缓冲区'
     
     @property
     def usage(self) -> str:
@@ -110,7 +110,7 @@ class ListCommands(CommandInterface):
     
     @property
     def description(self) -> str:
-        return "List all the commands."
+        return "列出所有的命令及其详细介绍"
     
     @property
     def usage(self) -> str:
