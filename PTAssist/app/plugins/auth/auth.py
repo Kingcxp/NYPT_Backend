@@ -92,6 +92,11 @@ def logout() -> Tuple[Dict[str, Any], int]:
         Tuple[Dict[str, Any], int]: 成功返回状态码 200(OK)，否则返回 400(Bad Request)
     """
     if session.get("user_id") is not None:
+        session.pop("user_id")
+        if session.get("captcha") != None:
+            session.pop("captcha")
+            session.pop("email")
+            session.pop("last_captcha_time")
         suc("GET", "/auth/logout", "200 OK")
         return {}, 200
     warn("GET", "/auth/logout", "400 Bad Request: 用户未登录！")
