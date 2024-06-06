@@ -116,30 +116,30 @@ class CommandManager:
         executor = self.commands.get(command)
         if executor is None:
             logger.opt(colors=True).error(
-                f'"<y>{command}</y>" : <r>Unknown</r> command'
+                f'"<y>{command}</y>" : <r>未找到</r> 命令！'
             )
             return
         try:
             execute_result = executor(args)
             if not execute_result:
                 logger.opt(colors=True).warning(
-                    f'"<y>{command}</y>": Command execution <r>failed</r>, it is <y>possibly</y> due to wrong arguments.'
+                    f'"<y>{command}</y>": 指令运行 <r>失败</r>, <y>可能是</y> 因为使用了 <b>错误的参数</b>'
                 )
                 logger.opt(colors=True).info(
-                    f'<m>Description</m> and <c>usage</c> of this command is as follows.'
+                    f'命令的 <m>简介</m> 和 <c>用法</c> 如下：'
                 )
-                print(f'Command name: "{command}"')
-                print(f'Command description: {self.commands_descriptions_and_usages[command][0]}')
-                print(f'Command usage: {self.commands_descriptions_and_usages[command][1]}')
+                console.print(f'命令名称: "{command}"')
+                console.print(f'命令简介: {self.commands_descriptions_and_usages[command][0]}')
+                console.print(f'命令用法: {self.commands_descriptions_and_usages[command][1]}')
                 return
         except Exception as e:
             print_exc()
             logger.opt(colors=True).critical(
-                f'"<y>{command}</y>": Command encountered <r>an error</r> during execution.'
+                f'"<y>{command}</y>": 命令在运行过程中 <r>出现错误</r>！'
             )
             return
         logger.opt(colors=True).success(
-            f'"<y>{command}</y>": Command <g>executed successfully!</g>'
+            f'"<y>{command}</y>": 命令 <g>运行成功</g>！'
         )
 
     def register_command(self, command: CommandInterface, force_register: bool = False) -> bool:
@@ -154,14 +154,14 @@ class CommandManager:
         """
         if force_register == False and self.commands.get(command.command) is not None:
             logger.opt(colors=True).error(
-                f'Command already exists: "<y>{command.command}</y>"! check your command name.'
-                f'"<y>{command.command}</y>": Command <m>already exists!</m>'
+                f'命令已经存在: "<y>{command.command}</y>"! 可能的话，请修改你的命令名称。'
+                f'"<y>{command.command}</y>": 命令 <m>已经存在</m>！'
             )
             return False
         self.commands[command.command] = command.execute
         self.commands_descriptions_and_usages[command.command] = (command.description, command.usage)
         logger.opt(colors=True).success(
-            f'<g>Succeeded</g> to <m>register</m> command "<y>{command.command}</y>"'
+            f'<g>成功注册</g> 命令 "<y>{command.command}</y>！"'
         )
         return True
 
@@ -256,7 +256,7 @@ class PluginManager:
             name = _module_name_to_plugin_name(plugin)
             if name in third_party_plugins:
                 raise RuntimeError(
-                    f"Plugin already exists: {name}! Check your plugin name."
+                    f"插件已经存在: {name}! 请检查你的插件名称！"
                 )
             third_party_plugins[name] = plugin
 
@@ -265,7 +265,7 @@ class PluginManager:
         for module_info in pkgutil.iter_modules(self.search_path):
             if module_info.name.startswith('_'):
                 logger.opt(colors=True).info(
-                    f'<m>Ignored</m> module "<y>{escape_tag(module_info.name)}</y>"'
+                    f'<m>忽略了</m> 模块 "<y>{escape_tag(module_info.name)}</y>"'
                 )
                 continue
             if (
@@ -273,7 +273,7 @@ class PluginManager:
                     or module_info.name in third_party_plugins
             ):
                 raise RuntimeError(
-                    f'Plugin already exists: "<y>{escape_tag(module_info.name)}</y>"! Check you plugin name.'
+                    f'插件已经存在: {module_info.name}! 请检查你的插件名称！'
                 )
 
             if not (
@@ -307,23 +307,23 @@ class PluginManager:
                     path_to_module_name(self.launcher_path, self._searched_plugin_names[name])
                 )
             else:
-                raise RuntimeError(f"Plugin not found: {name}! Check your plugin name.")
+                raise RuntimeError(f"插件未找到: {name}! 请检查你的插件名称！")
 
             if (blueprint := getattr(module, "__blueprint__", None)) is None:
                 raise RuntimeError(
-                    f"Module {module.__name__} is not loaded as a plugin! "
-                    "Make sure the __blueprint__ variable is correct."
+                    f"模块 {module.__name__} 未正确作为插件加载! "
+                    "请确认 `__blueprint__` 变量的值是否正确."
                 )
             self.app.register_blueprint(blueprint)
             logger.opt(colors=True).success(
-                f'<g>Succeeded</g> to <m>import</m> "<y>{escape_tag(name)}</y>"'
+                f'<g>成功加载</g> 插件 "<y>{escape_tag(name)}</y>"'
             )
             if (commands := getattr(module, "__commands__", None)) is not None:
                 for command in commands:
                     self.manager.register_command(command)
         except Exception as e:
             logger.opt(colors=True, exception=e).error(
-                f'<r><bg #f8bbd0>Failed to import "{escape_tag(name)}"</bg #f8bbd0></r>'
+                f'<r><bg #f8bbd0>插件 "{escape_tag(name)}" 加载失败！</bg #f8bbd0></r>'
             )
             exit(e)
 

@@ -626,7 +626,7 @@ class ListVolunteers(CommandInterface):
     def execute(self, args: List[str]) -> bool:
         if len(args) != 1 or not args[0].startswith("-type="):
             return False
-        volunteers = interface.select_all("USER", where={"IDENTITY": ("==", "Volunteer" + args[0].split("-type=")[1])})
+        volunteers = interface.select_all("USER", where={"IDENTITY": ("==", "Volunteer" + args[0].split("-type=")[1].upper())})
         table: Table = Table(show_header=True, header_style="bold green")
         table.add_column("编号", justify="left", style="bold yellow")
         table.add_column("名称", justify="left")

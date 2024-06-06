@@ -53,11 +53,11 @@ class HelpCommand(CommandInterface):
         return 'help'
     
     def execute(self, args: List[str]) -> bool:
-        logger.opt(colors=True).info('<y>Shortcuts</y>')
-        logger.opt(colors=True).info('<c>Enter</c> <y>help</y> to show this help.')
-        logger.opt(colors=True).info('<c>Enter</c> <y>info</y> to show info.')
-        logger.opt(colors=True).info('<c>Enter</c> <y>list-commands</y> to show all the available commands.')
-        logger.opt(colors=True).info('<c>Enter</c> <y>quit</y>, <y>stop</y> or <y>exit</y> to stop the server.')
+        logger.opt(colors=True).info('<y>帮助：</y>')
+        logger.opt(colors=True).info('<c>输入</c> <y>help</y> 来展示这段信息')
+        logger.opt(colors=True).info('<c>输入</c> <y>info</y> 展示运行环境信息')
+        logger.opt(colors=True).info('<c>输入</c> <y>list-commands</y> 查看所有已加载的命令')
+        logger.opt(colors=True).info('<c>输入</c> <y>quit</y>, <y>stop</y> 或者 <y>exit</y> 来终止服务')
         return True
     
 
@@ -76,11 +76,11 @@ class InfoCommand(CommandInterface):
         return 'info'
     
     def execute(self, args: List[str]) -> bool:
-        logger.opt(colors=True).info('<c>Current working directory:</c> <y>' + os.getcwd() + '</y>')
-        logger.opt(colors=True).info('<c>Python version:</c> ' + sys.version)
+        logger.opt(colors=True).info('<c>当前运行路径:</c> <y>' + os.getcwd() + '</y>')
+        logger.opt(colors=True).info('<c>python 版本:</c> ' + sys.version)
         repo = git.Repo(os.path.dirname(os.path.abspath(__file__)) + '/..')
-        logger.opt(colors=True).info("<c>Commit ID:</c> " + str(repo.commit()))
-        logger.opt(colors=True).info('<c>Version date:</c> ' + str(repo.commit().committed_datetime))
+        logger.opt(colors=True).info("<c>当前提交 ID:</c> " + str(repo.commit()))
+        logger.opt(colors=True).info('<c>版本日期:</c> ' + str(repo.commit().committed_datetime))
         return True
     
 
@@ -146,13 +146,13 @@ if __name__ == "__main__":
     thread = Thread(target=server.run)
     thread.start()
     logger.opt(colors=True).info("<r>A</r><y>p</y><g>p</g><e>l</e><c>i</c><m>c</m><w>a</w><r>t</r><y>i</y><g>o</g><e>n</e> <c>s</c><m>t</m><w>a</w><r>r</r><y>t</y><g>e</g><e>d</e><c>.</c>")
-    logger.opt(colors=True).info("Enter <y>help</y> to show help.")
+    logger.opt(colors=True).info("输入 <y>help</y> 查看帮助")
 
     while True:
         try:
             command = input()
         except KeyboardInterrupt:
-            logger.opt(colors=True).info("\r<r>DETECTED CTRL+C! PLEASE USE QUIT OR EXIT TO STOP THE SERVER!</r>")
+            logger.opt(colors=True).critical("\r<r>DETECTED CTRL+C! PLEASE USE QUIT OR EXIT TO STOP THE SERVER!</r>")
             continue
         if command == 'quit' or command == "exit" or command == "stop":
             close_server()
