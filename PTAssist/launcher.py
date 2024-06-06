@@ -126,7 +126,7 @@ class ListCommands(CommandInterface):
         return True
     
 
-def close_server():
+def close_server() -> None:
     server.close()
     try:
         stop_thread(thread)
@@ -150,15 +150,21 @@ if __name__ == "__main__":
 
     while True:
         try:
-            command = input()
+            command = input().strip()
         except KeyboardInterrupt:
-            logger.opt(colors=True).critical("\r<r>DETECTED CTRL+C! PLEASE USE QUIT OR EXIT TO STOP THE SERVER!</r>")
+            logger.opt(colors=True).critical("\r<r>使用了 CTRL+C! 这是不允许的，请使用正常命令终止服务!</r>")
             continue
-        if command == 'quit' or command == "exit" or command == "stop":
-            close_server()
-            break
         if command == "":
             continue
         else:
-            command_line = [c.strip() for c in command.split()]
-            command_manager.parse_command(command_line[0], command_line[1:])
+            to_quit: bool = False
+            commands = command.split("&&")
+            for _command in commands:
+                command_line = [c.strip() for c in _command.split()]
+                if command_line[0] == 'exit' or command_line[0] == 'quit' or command_line[0] == 'stop':
+                    close_server()
+                    to_quit = True
+                    break
+                command_manager.parse_command(command_line[0], command_line[1:])
+            if to_quit:
+                break
