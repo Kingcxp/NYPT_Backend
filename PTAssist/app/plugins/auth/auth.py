@@ -2,7 +2,7 @@ import time
 
 from math import ceil
 from flask import request, session
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, List
 from random import randint
 from functools import reduce
 
@@ -22,7 +22,7 @@ def require_id() -> Tuple[Dict[str, Any], int]:
     if session.get("user_id") is not None:
         suc("GET", "/auth/id", "200 OK")
         return {
-            "user_id": session.get('user_id')
+            "user_id": session.get("user_id")
         }, 200
     warn("GET", "/auth/id", "400 Bad Request: 用户未登录！")
     return {
@@ -208,7 +208,62 @@ def register() -> Tuple[Dict[str, Any], int]:
     return {}, 200
 
 
-@main.route("/auth/userdata/<string:which>", methods=['GET'])
+@main.route("/auth/teaminfo/fetch", methods=["GET"])
+def team_info_fetch() -> Tuple[Dict[str, Any], int]:
+    """Team 用户获取队伍成员信息
+
+    Returns:
+        Tuple[Dict[str, Any], int]: 成功返回状态码 200(OK)，失败返回 400(Bad Request) 或 500(Internal Server Error)
+        返回字典和 save 的 POST 表单一致
+    """
+    # TODO
+
+
+@main.route("/auth/teaminfo/save", methods=["POST"])
+def team_info_save() -> Tuple[Dict[str, Any], int]:
+    """Team 用户保存队伍成员信息
+
+    POST 表单信息：
+    {
+        "leaders": List[Dict[str, str]](领队列表)
+        "members": List[Dict[str, str]](队员列表)
+        "contact": str(联系人名称)
+    }
+
+    Returns:
+        Tuple[Dict[str, Any], int]: 成功返回状态码 200(OK)，失败返回 400(Bad Request) 或 500(Internal Server Error)
+    """
+    def mkstr(members: List[Dict[str, str]]) -> str:
+        """将成员列表转换为字符串
+
+        Args:
+            members (List[Dict[str, str]]): 成员列表
+
+        Returns:
+            str: 转换成的字符串，字段之间用 ' - ' 隔开，成员之间用 ' | ' 隔开
+        """
+        # TODO
+
+    leaders: List[Dict[str, str]] = request.json["leaders"]
+    members: List[Dict[str, str]] = request.json["members"]
+    contact: str = request.json["contact"]
+    if (user_id := session.get("user_id")) is None:
+        warn("POST", "/auth/teaminfo/save", "400 Bad Request: 用户未登录！")
+        return {
+            "msg": "您尚未登录！"
+        }, 400
+    fetch_result = interface.select_first("USER", where={"UID": ("==", user_id)})
+    if fetch_result is None:
+        warn("POST", "/auth/teaminfo/save", "500 Internal Server Error: 用户不存在！")
+        err("POST", "/auth/teaminfo/save", "注意！这是重大错误，正常操作不可能出现这种情况！")
+        return {
+            "msg": "用户不存在！"
+        }, 500
+    suc("POST", "/auth/teaminfo/save", "200 OK")
+    interface.update("USER", where={"UID": ("==", user_id)}, LEADER=mkstr(leaders), MEMBER=mkstr(members), CONTACT=contact)
+
+
+@main.route("/auth/userdata/<string:which>", methods=["GET"])
 def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
     """获得已登录用户的信息
 
