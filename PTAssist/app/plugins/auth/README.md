@@ -79,6 +79,46 @@ output:
         {msg: str}
 
 route:
+    /auth/teaminfo/fetch
+method:
+    GET
+input:
+    None
+output:
+    200 OK:
+        {
+            "leaders": List[Dict[str, str]],
+            "members": List[Dict[str, str]],
+            "contact": str
+        }
+    400 Bad Request:
+        # msg: 错误信息
+        {msg: str}
+    500 Internal Server Error:
+        # msg: 错误信息
+        {msg: str}
+
+route:
+    /auth/teaminfo/save
+method:
+    POST
+input:
+    {
+        "leaders": List[Dict[str, str]](领队列表)
+        "members": List[Dict[str, str]](队员列表)
+        "contact": str(联系人名称)
+    }
+output:
+    200 OK:
+        {}
+    400 Bad Request:
+        # msg: 错误信息
+        {msg: str}
+    500 Internal Server Error:
+        # msg: 错误信息
+        {msg: str}
+
+route:
     /auth/userdata/<str:which>
 method:
     GET

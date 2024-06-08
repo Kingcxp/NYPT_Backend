@@ -12,6 +12,45 @@ from ...manager import warn, suc, err
 from ..utils.email.email import send_mail
 
 
+def str_encode(members: List[Dict[str, str]]) -> str:
+    """将成员列表转换为字符串
+
+    Args:
+        members (List[Dict[str, str]]): 成员列表
+
+    Returns:
+        str: 转换成的字符串，字段之间用 ' - ' 隔开，成员之间用 ' | ' 隔开
+    """
+    def to_str(member: Dict[str, str]) -> str:
+        return f"{member['name']} - {member['gender']} - {member['mobile']} - {member['identity']} - {member['academy']} - {member['profession']} - {member['qq']} - {member['email']}"
+    return " | ".join([to_str(member) for member in members])
+
+
+def str_decode(members_str: str) -> List[Dict[str, str]]:
+    """将字符串转换为成员列表
+
+    Args:
+        members_str (str): 成员列表字符串
+
+    Returns:
+        List[Dict[str, str]]: 转换出的成员列表
+    """
+    def from_str(member: str) -> Dict[str, str]:
+        values = member.split(' - ')
+        return {
+            "name": values[0],
+            "gender": values[1],
+            "mobile": values[2],
+            "identity": values[3],
+            "academy": values[4],
+            "profession": values[5],
+            "qq": values[6],
+            "email": values[7]
+        }
+    members = members_str.split(' - ')
+    return [from_str(member) for member in members]
+
+
 @main.route("/auth/id", methods=["GET"])
 def require_id() -> Tuple[Dict[str, Any], int]:
     """返回 session 中储存的用户标识
@@ -216,7 +255,24 @@ def team_info_fetch() -> Tuple[Dict[str, Any], int]:
         Tuple[Dict[str, Any], int]: 成功返回状态码 200(OK)，失败返回 400(Bad Request) 或 500(Internal Server Error)
         返回字典和 save 的 POST 表单一致
     """
-    # TODO
+    if (user_id := session.get("user_id")) is None:
+        warn("GET", "/auth/teaminfo/fetch", "400 Bad Request: 用户未登录！")
+        return {
+            "msg": "您尚未登录！"
+        }, 400
+    fetch_result = interface.select_first("USER", where={"UID": ("==", user_id)})
+    if fetch_result is None:
+        warn("GET", "/auth/teaminfo/fetch", "500 Internal Server Error: 用户不存在！")
+        err("GET", "/auth/teaminfo/fetch", "注意！这是重大错误，正常操作不可能出现这种情况！")
+        return {
+            "msg": "用户不存在！"
+        }, 500
+    suc("POST", "/auth/teaminfo/save", "200 OK")
+    return {
+        "leaders": str_decode(fetch_result[Index.LEADER.value]),
+        "members": str_decode(fetch_result[Index.MEMBER.value]),
+        "contact": fetch_result[Index.CONTACT.value],
+    }, 200
 
 
 @main.route("/auth/teaminfo/save", methods=["POST"])
@@ -233,17 +289,6 @@ def team_info_save() -> Tuple[Dict[str, Any], int]:
     Returns:
         Tuple[Dict[str, Any], int]: 成功返回状态码 200(OK)，失败返回 400(Bad Request) 或 500(Internal Server Error)
     """
-    def mkstr(members: List[Dict[str, str]]) -> str:
-        """将成员列表转换为字符串
-
-        Args:
-            members (List[Dict[str, str]]): 成员列表
-
-        Returns:
-            str: 转换成的字符串，字段之间用 ' - ' 隔开，成员之间用 ' | ' 隔开
-        """
-        # TODO
-
     leaders: List[Dict[str, str]] = request.json["leaders"]
     members: List[Dict[str, str]] = request.json["members"]
     contact: str = request.json["contact"]
@@ -260,7 +305,8 @@ def team_info_save() -> Tuple[Dict[str, Any], int]:
             "msg": "用户不存在！"
         }, 500
     suc("POST", "/auth/teaminfo/save", "200 OK")
-    interface.update("USER", where={"UID": ("==", user_id)}, LEADER=mkstr(leaders), MEMBER=mkstr(members), CONTACT=contact)
+    interface.update("USER", where={"UID": ("==", user_id)}, LEADER=str_encode(leaders), MEMBER=str_encode(members), CONTACT=contact)
+    return {}, 200
 
 
 @main.route("/auth/userdata/<string:which>", methods=["GET"])
