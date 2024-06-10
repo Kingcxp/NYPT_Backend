@@ -47,7 +47,9 @@ def str_decode(members_str: str) -> List[Dict[str, str]]:
             "qq": values[6],
             "email": values[7]
         }
-    members = members_str.split(' - ')
+    if members_str == '':
+        return []
+    members = members_str.split(' | ')
     return [from_str(member) for member in members]
 
 
@@ -267,7 +269,7 @@ def team_info_fetch() -> Tuple[Dict[str, Any], int]:
         return {
             "msg": "用户不存在！"
         }, 500
-    suc("POST", "/auth/teaminfo/save", "200 OK")
+    suc("POST", "/auth/teaminfo/fetch", "200 OK")
     return {
         "leaders": str_decode(fetch_result[Index.LEADER.value]),
         "members": str_decode(fetch_result[Index.MEMBER.value]),
