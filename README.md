@@ -9,7 +9,7 @@ TODO
 ```
 # 你应当在此之前先安装 python3 和 pip，或使用 python 的虚拟环境
 pip install -r requirements.txt
-python PTAssist/launcher.py
+python NYPT/launcher.py
 ```
 
 ## 软件架构

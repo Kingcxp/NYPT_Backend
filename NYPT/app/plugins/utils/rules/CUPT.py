@@ -1,27 +1,30 @@
 from typing import List, Tuple, Set
 
-from PTAssist.app.plugins.utils.rules.types import PlayerData, RecordData
-
 from .types import *
 from .RuleInterface import RuleInterface
 from ....manager import logger
 
 
-class JSYPTRule(RuleInterface):
+class CUPTRule(RuleInterface):
     player_master_times_in_1_round_config = 2
     player_master_times_in_1_match_config = 5
     player_rep_times_in_1_match_config = 3
+    max_refuse_question_count = 5
 
     def __init__(self) -> None:
+        self.question_count = 5
         self.ban_rule_list_config: List[Tuple[Any, Any]] = [
-            (TeamType.REPORTER, QuestionType.BAN),
+            (TeamType.REPORTER, QuestionType.REFUSED),
             (TeamType.REPORTER, QuestionType.REPORTED),
-            (TeamType.OPPONENT, QuestionType.OPPOSED)
+            (TeamType.OPPONENT, QuestionType.OPPOSED),
+            (TeamType.OPPONENT, QuestionType.REPORTED)
         ]
         self.special_ban_list_config: List[Tuple[Any, Any]] = [
-            (TeamType.REPORTER, QuestionType.BAN),
             (TeamType.REPORTER, QuestionType.REPORTED)
         ]
+
+    def get_type() -> str:
+        return "CUPT"
 
     def get_optional_question_id_list(
         self,
@@ -35,10 +38,12 @@ class JSYPTRule(RuleInterface):
         获取当前对局的可选赛题
         当前的比赛赛题禁选规则为：
         【不可解锁规则】：
-        在同一轮对抗赛中，题目只能被陈述一次
+        在同一轮对抗赛中，题目只能被陈述一次。
         【可解锁规则】：
-        1. 正方作为正方拒绝过的题目 （用于实现自主报题）
-        2. 反方作为反方挑战过的题目
+        1. 正方作为正方拒绝过的题目
+        2. 正方作为正方拒绝过的题目
+        3. 反方作为反方挑战过的题目
+        4. 反方作为正方陈述过的题目
 
         Args:
             rep_team_record_data_list (List[RecordData]): 正方队伍比赛记录
@@ -50,9 +55,9 @@ class JSYPTRule(RuleInterface):
         Returns:
             List[int]: 赛题编号列表 包含了当前对局中的全部可选题
         """
-        if len(question_id_lib_list) > 0:
+        if len(question_id_lib_list) > self.question_count:
             temp_question_id_lib_list = list(set(question_id_lib_list) - set(used_question_id_list))
-            logger.opt(colors=True).info(f"<b>当前比赛可用题库为 <y>{temp_question_id_lib_list}</y></b>")
+            logger.opt(colors=True).info(f"<b>当前比赛可用题库为：</b><y>{temp_question_id_lib_list}</y>")
             rep_qrecord_set = set([
                 (it.questionID, (TeamType.REPORTER, it.role)) for it in rep_team_record_data_list
             ])
@@ -95,7 +100,7 @@ class JSYPTRule(RuleInterface):
                         break
                 return optional_question_id_list
         else:
-            logger.opt(colors=True).warning(f"<r>不存在赛题，无法进行赛题的禁用与解放</r>")
+            logger.opt(colors=True).warning(f"<r>赛题小于 <y>{self.question_count}</y> 道，无法进行赛题的禁用与解放</r>")
             return question_id_lib_list
         
     def getOptionalQuestionIDList(
@@ -116,13 +121,9 @@ class JSYPTRule(RuleInterface):
         Returns:
             List[int]: 当前禁选规则下的可选题号列表
         """
-        rep_ban_rule_list = [it for it in ban_rule_list if it[0] == TeamType.REPORTER]
-        logger.opt(colors=True).info(f"<b>正方banRuleList = </b><y>{rep_ban_rule_list}</y>")
-        rep_ban_question_id_list = [it[0] for it in rep_qrecord_list if it[1] in rep_ban_rule_list]
+        rep_ban_question_id_list = [it[0] for it in rep_qrecord_list if it[1] in ban_rule_list]
         logger.opt(colors=True).info(f"<b>repBanQuestionIDList = </b><y>{rep_ban_question_id_list}</y>")
-        opp_ban_rule_list = [it for it in ban_rule_list if it[0] == TeamType.OPPONENT]
-        logger.opt(colors=True).info(f"<b>反方banRuleList = </b><y>{opp_ban_rule_list}</y>")
-        opp_ban_question_id_list = [it[0] for it in opp_qrecord_list if it[1] in opp_ban_rule_list]
+        opp_ban_question_id_list = [it[0] for it in opp_qrecord_list if it[1] in ban_rule_list]
         logger.opt(colors=True).info(f"<b>oppBanQuestionIDList = </b><y>{opp_ban_question_id_list}</y>")
         return list(set(question_id_list) - set(rep_ban_question_id_list) - set(opp_ban_question_id_list))
     
@@ -213,7 +214,19 @@ class JSYPTRule(RuleInterface):
         Returns:
             float: 正方计分权重
         """
-        return 3.0
+        logger.opt(colors=True).info(f"<b>getRepScoreWeight(teamRecordDataList: List<RecordData>, isRefuse: Boolean)</b>")
+        logger.opt(colors=True).info(f"<b>teamRecordDataList = </b><y>{team_record_data_list}</y>")
+        logger.opt(colors=True).info(f"<b>isRefuse = </b><y>{is_refuse}</y>")
+        old_rep_score_weight_list = [it.weight for it in team_record_data_list if it.role in ("R", "X")]
+        if len(old_rep_score_weight_list) == 0:
+            logger.opt(colors=True).info("<b>return </b><y>3.0</y>")
+            return 3.0
+        else:
+            old_rep_score_weight = min(old_rep_score_weight_list)
+            refused_question_count = len([it for it in team_record_data_list if it.role == "X"])
+            weight = old_rep_score_weight - 0.2 if is_refuse and refused_question_count >= self.max_refuse_question_count else old_rep_score_weight
+            logger.opt(colors=True).info(f"<b>return </b><y>{weight}</y>")
+            return weight
             
     def get_opp_score_weight(self) -> float:
         return 2.0

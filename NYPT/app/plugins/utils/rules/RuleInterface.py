@@ -6,6 +6,15 @@ from .types import *
 
 class RuleInterface(metaclass=ABCMeta):
     @abstractmethod
+    def get_type() -> str:
+        """获取比赛规则类型
+
+        Returns:
+            str: "CUPT" 或 "JSYPT"
+        """
+        return "RuleInterface"
+
+    @abstractmethod
     def get_optional_question_id_list(
         self,
         rep_team_record_data_list: List[RecordData],
