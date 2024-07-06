@@ -57,6 +57,7 @@ interface.create_table("PENDING_REQUEST", {
     "IDENTITY": str,
     "CONTACT": str
 })
+
 class Index(Enum):
     UID         = 0
     NAME        = 1

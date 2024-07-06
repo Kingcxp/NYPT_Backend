@@ -7,6 +7,11 @@ from ...manager import suc, err, escape_tag
 
 @main.route("/notice/total", methods=['GET'])
 def notice_total() -> Tuple[str, int]:
+    """获取公告总数
+
+    Returns:
+        Tuple[str, int]: 200 OK
+    """
     tot: int = 0
     for i in range(1, 100):
         try:
@@ -21,6 +26,14 @@ def notice_total() -> Tuple[str, int]:
 
 @main.route("/notice/<int:page>", methods=['GET'])
 def notice(page: int) -> Tuple[str, int]:
+    """获取指定编号的公告
+
+    Args:
+        page (int): 公告编号
+
+    Returns:
+        Tuple[str, int]: 找到文件返回 200(OK)，否则返回 404(Not Found)
+    """
     page_path = Config.file_path + f"notice{page}.html"
     try:
         f = open(page_path, "r")
