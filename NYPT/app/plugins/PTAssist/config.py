@@ -1,6 +1,6 @@
 import os
 
-from typing import Enum
+from enum import Enum
 
 
 class WorkMode(Enum):

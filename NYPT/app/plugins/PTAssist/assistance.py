@@ -6,7 +6,7 @@ from json import dumps, loads
 from typing import Tuple, Dict, Any, Optional
 from flask import request
 
-from . import main
+from . import main, interface, Index, next_room_id
 from .config import Config, WorkMode
 from ...manager import suc, warn, err
 
@@ -54,7 +54,19 @@ def roomdata() -> Tuple[Dict[str, Any], int]:
     round_id: int = request.json["round"]
     token: str = request.json["token"]
 
-    # TODO: 验证会场 token，失败返回 400 Bad Request
+    # TODO: 验证会场 token，失败返回 400 Bad Request or 404 Not Found
+    try_fetch = interface.select_first("ROOMS", where={"ROOMID": ("==", room_id)})
+    if try_fetch is None:
+        warn("POST", "/assist/roomdata", "会场 ID 不存在！")
+        return {
+            "msg": "会场 ID 不存在！"
+        }, 404
+    fetch_result = try_fetch[Index.TOKEN.value]
+    if fetch_result != token:
+        warn("POST", "/assist/roomdata", "会场密钥不匹配！")
+        return {
+            "msg": "会场密钥不匹配！"
+        }, 400
     
     if Config.mode == WorkMode.OFFLINE:
         file_path = \
@@ -90,8 +102,7 @@ def roomdata() -> Tuple[Dict[str, Any], int]:
             return {
                 "msg": "服务端网络或配置异常！无法连接到 PTAssist！"
             }, 500
-        else:
-            suc("POST", "/assist/roomdata", "服务器数据获取成功！")
-            return {
-                "data": data
-            }, 200
+        suc("POST", "/assist/roomdata", "服务器数据获取成功！")
+        return {
+            "data": data
+        }, 200
