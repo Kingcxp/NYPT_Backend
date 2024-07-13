@@ -54,7 +54,6 @@ def roomdata() -> Tuple[Dict[str, Any], int]:
     round_id: int = request.json["round"]
     token: str = request.json["token"]
 
-    # TODO: 验证会场 token，失败返回 400 Bad Request or 404 Not Found
     try_fetch = interface.select_first("ROOMS", where={"ROOMID": ("==", room_id)})
     if try_fetch is None:
         warn("POST", "/assist/roomdata", "会场 ID 不存在！")

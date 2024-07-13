@@ -48,7 +48,7 @@ class Interface:
         return result
     
     @staticmethod
-    def decide_type(data_type: type) -> Any:
+    def decide_type(data_type: Optional[type]) -> Any:
         if data_type == str:
             return sqlalchemy.String(4096)
         if data_type == Article:

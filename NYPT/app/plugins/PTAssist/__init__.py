@@ -2,6 +2,7 @@ import os
 
 from flask import Blueprint
 from enum import Enum
+from typing import Optional
 
 from ..utils.database.database import Interface
 
@@ -13,19 +14,16 @@ interface = Interface(os.path.dirname(os.path.abspath(__file__)), "rooms")
 
 字段:
 ROOMID: 会场编号
-ROOMNAME: 会场名称
 TOKEN: 会场密码
 """
 interface.create_table("ROOMS", {
     "ROOMID": int,
-    "ROOMNAME": str,
     "TOKEN": str
 })
 
 class Index(Enum):
     ROOMID   = 0
-    ROOMNAME = 1
-    TOKEN    = 2
+    TOKEN    = 1
 
 
 def next_room_id() -> int:
@@ -34,7 +32,7 @@ def next_room_id() -> int:
     Returns:
         int: 下一个未被占用过的 roomid
     """
-    room_now: int = interface.select_scalar("ROOMS", order_by="ROOMID", is_desc=True)
+    room_now: Optional[int] = interface.select_scalar("ROOMS", order_by="ROOMID", is_desc=True)
     if room_now is None:
         room_now = 0
     return room_now + 1

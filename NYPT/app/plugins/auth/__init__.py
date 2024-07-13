@@ -109,7 +109,7 @@ def next_team() -> str:
     Returns:
         int: 下一个 team 编号
     """
-    team_now: List[Any] = interface.select_first("USER", where={"IDENTITY": ("==", "Team")}, order_by="REALNAME", is_desc=True)
+    team_now: Optional[List[Any]] = interface.select_first("USER", where={"IDENTITY": ("==", "Team")}, order_by="REALNAME", is_desc=True)
     team_name: str = ""
     if team_now is None:
         team_name = "team001"
@@ -128,7 +128,7 @@ def next_volunteer(type: str) -> str:
     Returns:
         int: 下一个 volunteer 编号
     """
-    volunteer_now: List[Any] = interface.select_first("USER", where={"IDENTITY": ("==", f"Volunteer{type.upper()}")}, order_by="REALNAME", is_desc=True)
+    volunteer_now: Optional[List[Any]] = interface.select_first("USER", where={"IDENTITY": ("==", f"Volunteer{type.upper()}")}, order_by="REALNAME", is_desc=True)
     volunteer_name: str = ""
     if volunteer_now is None:
         volunteer_name = f"volunteer-{type.lower()}001"
@@ -143,7 +143,7 @@ def next_rid() -> int:
     Returns:
         int: 下一个未被占用过的 rid
     """
-    rid_now: int = interface.select_scalar("PENDING_REQUEST", order_by="RID", is_desc=True)
+    rid_now: Optional[int] = interface.select_scalar("PENDING_REQUEST", order_by="RID", is_desc=True)
     if rid_now is None:
         rid_now = 0
     return rid_now + 1
