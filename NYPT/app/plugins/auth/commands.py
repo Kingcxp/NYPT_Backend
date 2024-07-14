@@ -1,10 +1,13 @@
+import os
+import xlwt
+
 from base64 import b64encode, b64decode
 from typing import List, Any, Union, Optional
 from random import randint
 from functools import reduce
 from rich.table import Table
 
-from . import interface, next_uid, Index, next_team, next_volunteer
+from . import interface, next_uid, Index, next_team, next_volunteer, str_decode
 from .config import Config
 from ..utils.email.email import send_mail
 from ...manager import CommandInterface, logger, console
@@ -679,4 +682,80 @@ class ListAll(CommandInterface):
                 str(user[Index.IDENTITY.value])
             )
         console.print(table)
+        return True
+    
+
+class ExportConfig(CommandInterface):
+    @property
+    def command(self) -> str:
+        return "export-config"
+    
+    @property
+    def description(self) -> str:
+        return "导出为 PTAssist 使用的配置文件"
+    
+    @property
+    def usage(self) -> str:
+        return "export-config"
+    
+    def execute(self, args: List[str]) -> bool:
+        workbook = xlwt.Workbook(encoding='utf-8')
+        team_infos = interface.select_all("USER", where={"IDENTITY": ("==", "Team")})
+        team_infos = sorted(team_infos, key=lambda x: x[Index.SCHOOL.value])
+
+        #? 配置表
+        sheet_config = workbook.add_sheet("软件配置")
+        index: int = -1
+        for key, value in Config.config_default.items():
+            index += 1
+            sheet_config.write(index, 0, key)
+            sheet_config.write(index, 1, value)
+
+        #? 赛题信息
+        sheet_info = workbook.add_sheet("赛题信息")
+        sheet_info.write(0, 0, "题号")
+        sheet_info.write(0, 1, "题名")
+        index = 0
+        for problem in Config.problem_set:
+            index += 1
+            sheet_info.write(index, 0, str(index))
+            sheet_info.write(index, 1, problem)
+        
+        #? 队伍信息
+        sheet_team = workbook.add_sheet("队伍信息")
+        index = -1
+        for header in Config.team_info_headers:
+            index += 1
+            sheet_team.write(0, index, header.name)
+        index = 0
+        for team in team_infos:
+            index += 1
+            members: List[str] = team[Index.MEMBER.value].split(' | ')
+            sheet_team.write(index, 0, team[Index.SCHOOL.value])
+            sheet_team.write(index, 1, team[Index.REALNAME.value])
+            # TODO ? 抽签号 ?
+            sheet_team.write(index, 2, str(index))
+            for i in range(len(members)):
+                sheet_team.write(index, 3 + i * 2, f"{i + 1}号选手")
+                sheet_team.write(index, 4 + i * 2, str_decode(members[i])["gender"])
+
+        #? 裁判信息
+        # TODO 无法生成？
+        sheet_referee = workbook.add_sheet("裁判信息")
+        sheet_referee.write(0, 0, "学校名")
+        sheet_referee.write(0, 1, "裁判们")
+
+        #? 队伍题库
+        sheet_problem_set = workbook.add_sheet("队伍题库")
+        sheet_problem_set.write(0, 0, "学校名")
+        sheet_problem_set.write(0, 1, "队伍名")
+        sheet_problem_set.write(0, 2, "题库")
+        index = 0
+        for team in team_infos:
+            index += 1
+            sheet_team.write(index, 0, team[Index.SCHOOL.value])
+            sheet_team.write(index, 1, team[Index.REALNAME.value])
+        
+        workbook.save(os.path.dirname(os.path.abspath(__file__)) + "/server_config.xlsx")
+        logger.opt(colors=True).info(f"<g>配置文件导出成功！</g>")
         return True

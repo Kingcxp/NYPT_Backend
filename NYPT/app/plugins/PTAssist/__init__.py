@@ -38,7 +38,7 @@ def next_room_id() -> int:
     return room_now + 1
 
 
-main = Blueprint('main', __name__)
+main = Blueprint('PTAssist', __name__)
 __blueprint__ = main
 __commands__ = []
 

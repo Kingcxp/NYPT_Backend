@@ -6,51 +6,10 @@ from typing import Dict, Any, Tuple, Optional, List
 from random import randint
 from functools import reduce
 
-from . import main, interface, encrypter, Index, next_rid
+from . import main, interface, encrypter, Index, next_rid, str_decode, str_encode
 from .config import Config
 from ...manager import warn, suc, err
 from ..utils.email.email import send_mail
-
-
-def str_encode(members: List[Dict[str, str]]) -> str:
-    """将成员列表转换为字符串
-
-    Args:
-        members (List[Dict[str, str]]): 成员列表
-
-    Returns:
-        str: 转换成的字符串，字段之间用 ' - ' 隔开，成员之间用 ' | ' 隔开
-    """
-    def to_str(member: Dict[str, str]) -> str:
-        return f"{member['name']} - {member['gender']} - {member['mobile']} - {member['identity']} - {member['academy']} - {member['profession']} - {member['qq']} - {member['email']}"
-    return " | ".join([to_str(member) for member in members])
-
-
-def str_decode(members_str: str) -> List[Dict[str, str]]:
-    """将字符串转换为成员列表
-
-    Args:
-        members_str (str): 成员列表字符串
-
-    Returns:
-        List[Dict[str, str]]: 转换出的成员列表
-    """
-    def from_str(member: str) -> Dict[str, str]:
-        values = member.split(' - ')
-        return {
-            "name": values[0],
-            "gender": values[1],
-            "mobile": values[2],
-            "identity": values[3],
-            "academy": values[4],
-            "profession": values[5],
-            "qq": values[6],
-            "email": values[7]
-        }
-    if members_str == '':
-        return []
-    members = members_str.split(' | ')
-    return [from_str(member) for member in members]
 
 
 @main.route("/auth/id", methods=["GET"])
