@@ -36,22 +36,44 @@ def request_data(data: Optional[Any] = None) -> Optional[Dict[str, Any]]:
     return recv_data
 
 
+@main.route("/assist/total/room", methods=["GET"])
+def get_room_total() -> Tuple[str, int]:
+    """获取分会场总数
+
+    Returns:
+        Tuple[str, int]: 200 OK
+    """
+    suc("GET", "/assist/total/room", f"200 OK")
+    return str(next_room_id() - 1), 200
+
+
+@main.route("/assist/total/round", methods=["GET"])
+def get_round_total() -> Tuple[str, int]:
+    """获取轮次总数
+
+    Returns:
+        Tuple[str, int]: 200 OK
+    """
+    suc("GET", "/assist/total/round", f"200 OK")
+    return str(Config.round_count), 200
+
+
 @main.route("/assist/roomdata", methods=["POST"])
 def roomdata() -> Tuple[Dict[str, Any], int]:
     """获取指定会场的数据
 
     POST 表单信息:
     {
-        "roomID": int(会场 ID)
-        "round": int(轮次 ID)
-        "token": str(会场 token)
+        "roomID": int(会场编号)
+        "round": int(比赛轮次)
+        "token": str(会场令牌)
     }
 
     Returns:
         Tuple[Dict[str, Any], int]: 成功返回 200(OK)，失败返回 400(Bad Request) 或者 404(Not Found) 或者 500(Internal Server Error)
     """
-    room_id: int = request.json["roomID"]
-    round_id: int = request.json["round"]
+    room_id: int = int(request.json["roomID"])
+    round_id: int = int(request.json["round"])
     token: str = request.json["token"]
 
     try_fetch = interface.select_first("ROOMS", where={"ROOMID": ("==", room_id)})
@@ -64,7 +86,7 @@ def roomdata() -> Tuple[Dict[str, Any], int]:
     if fetch_result != token:
         warn("POST", "/assist/roomdata", "会场密钥不匹配！")
         return {
-            "msg": "会场密钥不匹配！"
+            "msg": "会场令牌不匹配！"
         }, 400
     
     if Config.mode == WorkMode.OFFLINE:
@@ -88,7 +110,9 @@ def roomdata() -> Tuple[Dict[str, Any], int]:
                 }, 500
             suc("POST", "/assist/roomdata", "本地数据获取成功！")
             return {
-                "data": file_json
+                "data": file_json,
+                "rule": Config.rule,
+                "match_type": Config.match_type
             }, 200
     else:
         data = request_data({

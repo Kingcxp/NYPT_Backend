@@ -38,9 +38,17 @@ def next_room_id() -> int:
     return room_now + 1
 
 
+from .commands import *
+
+
 main = Blueprint('PTAssist', __name__)
 __blueprint__ = main
-__commands__ = []
+__commands__ = [
+    CreateRoom(),
+    RemoveRoom(),
+    SetRoompass(),
+    ListRooms()
+]
 
 
 from . import assistance

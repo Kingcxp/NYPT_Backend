@@ -50,14 +50,32 @@ class HelpCommand(CommandInterface):
     
     @property
     def usage(self) -> str:
-        return 'help'
+        return 'help 或者 help <command>'
     
     def execute(self, args: List[str]) -> bool:
-        logger.opt(colors=True).info('<y>帮助：</y>')
-        logger.opt(colors=True).info('<c>输入</c> <y>help</y> 来展示这段信息')
-        logger.opt(colors=True).info('<c>输入</c> <y>info</y> 展示运行环境信息')
-        logger.opt(colors=True).info('<c>输入</c> <y>list-commands</y> 查看所有已加载的命令')
-        logger.opt(colors=True).info('<c>输入</c> <y>quit</y>, <y>stop</y> 或者 <y>exit</y> 来终止服务')
+        if len(args) == 0:
+            logger.opt(colors=True).info('<y>帮助：</y>')
+            logger.opt(colors=True).info('<c>输入</c> <y>help</y> 来展示这段信息')
+            logger.opt(colors=True).info('<c>输入</c> <y>info</y> 展示运行环境信息')
+            logger.opt(colors=True).info('<c>输入</c> <y>clear</y> 清空控制台缓冲区')
+            logger.opt(colors=True).info('<c>输入</c> <y>list-commands</y> 查看所有的命令信息')
+            logger.opt(colors=True).info('<c>输入</c> <y>quit</y>, <y>stop</y> 或者 <y>exit</y> 来终止服务')
+            logger.opt(colors=True).info('<e>提示：</e> 你可以在 <y>help</y> 命令之后，加上 <c>若干条</c> 命令名称来查看 <g>这些命令的详细信息</g>！')
+        else:
+            for arg in args:
+                command = command_manager.commands.get(arg)
+                print()
+                if command is None:
+                    logger.opt(colors=True).error(
+                        f'"<y>{arg}</y>" : <r>未找到</r> 命令！'
+                    )
+                else:
+                    logger.opt(colors=True).info(
+                        f'命令的 <m>简介</m> 和 <c>用法</c> 如下：'
+                    )
+                    console.print(f'命令名称: "{arg}"')
+                    console.print(f'命令简介: {command_manager.commands_descriptions_and_usages[arg][0]}')
+                    console.print(f'命令用法: {command_manager.commands_descriptions_and_usages[arg][1]}')
         return True
     
 
