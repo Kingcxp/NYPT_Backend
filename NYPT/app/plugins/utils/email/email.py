@@ -1,5 +1,4 @@
-import smtplib
-# import aiosmtplib
+import aiosmtplib
 import datetime
 
 from email.mime.multipart import MIMEMultipart
@@ -9,7 +8,7 @@ from email.utils import formataddr
 from .config import Config
 
 
-def send_mail(target: str, sender_name: str, title: str, msg: str) -> bool:
+async def send_mail(target: str, sender_name: str, title: str, msg: str) -> bool:
     """
     发送纯文本邮件
 
@@ -32,13 +31,9 @@ def send_mail(target: str, sender_name: str, title: str, msg: str) -> bool:
     message.attach(MIMEText(msg, "plain", "utf-8"))
 
     try:
-        # async with aiosmtplib.SMTP(Config.mail_host) as server:
-        #     await server.login(Config.sender, Config.sender_pass)
-        #     await server.sendmail(Config.sender, target, message.as_string())
-        server = smtplib.SMTP(Config.mail_host)
-        server.login(Config.sender, Config.sender_pass)
-        server.sendmail(Config.sender, target, message.as_string())
-        server.quit()
+        async with aiosmtplib.SMTP(Config.mail_host) as server:
+            await server.login(Config.sender, Config.sender_pass)
+            await server.sendmail(Config.sender, target, message.as_string())
         return True
     except Exception as err:
         print(err)
