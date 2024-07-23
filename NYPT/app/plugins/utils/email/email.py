@@ -1,4 +1,5 @@
 import smtplib
+# import aiosmtplib
 import datetime
 
 from email.mime.multipart import MIMEMultipart
@@ -31,6 +32,9 @@ def send_mail(target: str, sender_name: str, title: str, msg: str) -> bool:
     message.attach(MIMEText(msg, "plain", "utf-8"))
 
     try:
+        # async with aiosmtplib.SMTP(Config.mail_host) as server:
+        #     await server.login(Config.sender, Config.sender_pass)
+        #     await server.sendmail(Config.sender, target, message.as_string())
         server = smtplib.SMTP(Config.mail_host)
         server.login(Config.sender, Config.sender_pass)
         server.sendmail(Config.sender, target, message.as_string())

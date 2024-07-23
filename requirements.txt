@@ -1,6 +1,9 @@
 flask
+flask[async]
 flask_cors
 flask-session
+aiofile
+aiosmtplib
 psutil
 waitress
 uuid
