@@ -10,7 +10,7 @@ class WorkMode(Enum):
 
 class Config:
     # !服务器地址
-    mode: WorkMode = WorkMode.ONLINE
+    mode: WorkMode = WorkMode.OFFLINE
 
     # !ONLINE 设置
     # ?服务器地址
@@ -24,7 +24,7 @@ class Config:
     # ?轮次文件夹路径名，跟在主文件夹之后，请用 {id} 标识轮次号
     round_folder_name: str = "Round{id}/"
     # ?会场文件夹路径名，跟在轮次文件夹之后，请用 {id} 标识房间号
-    room_file_name: str = "Room{id}"
+    room_file_name: str = "Room{id}.json"
 
     # !赛场规则配置
     # ?比赛规则
@@ -34,3 +34,8 @@ class Config:
 
     # !总轮次
     round_count: int = 3
+
+    # !会场编号偏移
+    room_offset: int = 1
+    # !轮次编号偏移
+    round_offset: int = 1

@@ -3,6 +3,9 @@ __pycache__/
 .vscode/
 flask_session/
 
-# Only for test uses. Will be removed by deployment.
+# All data should not be tracked
 *.sqlite
 *.db
+
+# Test data should not leak
+match/

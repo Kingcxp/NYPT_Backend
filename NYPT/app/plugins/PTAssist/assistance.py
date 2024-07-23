@@ -37,14 +37,17 @@ def request_data(data: Optional[Any] = None) -> Optional[Dict[str, Any]]:
 
 
 @main.route("/assist/total/room", methods=["GET"])
-def get_room_total() -> Tuple[str, int]:
+def get_room_total() -> Tuple[Dict[str, Any], int]:
     """获取分会场总数
 
     Returns:
         Tuple[str, int]: 200 OK
     """
     suc("GET", "/assist/total/room", f"200 OK")
-    return str(next_room_id() - 1), 200
+    return {
+        "rooms": next_room_id() - 1,
+        "offset": Config.room_offset
+    }, 200
 
 
 @main.route("/assist/total/round", methods=["GET"])
@@ -55,7 +58,10 @@ def get_round_total() -> Tuple[str, int]:
         Tuple[str, int]: 200 OK
     """
     suc("GET", "/assist/total/round", f"200 OK")
-    return str(Config.round_count), 200
+    return {
+        "rounds": Config.round_count,
+        "offset": Config.round_offset
+    }, 200
 
 
 @main.route("/assist/roomdata", methods=["POST"])
@@ -94,14 +100,15 @@ def roomdata() -> Tuple[Dict[str, Any], int]:
             Config.main_folder + \
             Config.round_folder_name.format(id=round_id) + \
             Config.room_file_name.format(id=room_id)
-        if os.path.exists(file_path):
-            warn("POST", "/assist/roomdata", "当前模式：OFFLINE，本地数据未找到！")
+        if not os.path.exists(file_path):
+            warn("POST", "/assist/roomdata", f"[OFFLINE]: <e>{file_path}</e> 未找到！")
             return {
                 "msg": "服务器配置为离线模式，本地数据未找到！"
             }, 404
         else:
             try:
-                with open(file_path, "r") as file:
+                suc("POST", "/assist/roomdata", f"[OFFLINE]: 读取<e>{file_path}</e>...")
+                with open(file_path, "r", encoding='utf-8') as file:
                     file_json = loads("".join(file.readlines()))
             except:
                 err("POST", "/assist/roomdata", "本地数据读取失败！")
@@ -121,11 +128,13 @@ def roomdata() -> Tuple[Dict[str, Any], int]:
             "data": None
         })
         if data is None:
-            err("POST", "/assist/roomdata", "向服务端发送请求失败！请检查配置或网络连接！")
+            err("POST", "/assist/roomdata", "[ONLINE]: 向服务端发送请求失败！请检查配置或网络连接！")
             return {
-                "msg": "服务端网络或配置异常！无法连接到 PTAssist！"
+                "msg": "服务端网络或配置异常！无法连接到 PTAssist 服务端！"
             }, 500
-        suc("POST", "/assist/roomdata", "服务器数据获取成功！")
+        suc("POST", "/assist/roomdata", "[ONLINE]: 服务器数据获取成功！")
         return {
-            "data": data
+            "data": data,
+            "rule": Config.rule,
+            "match_type": Config.match_type
         }, 200
