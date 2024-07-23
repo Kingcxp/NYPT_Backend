@@ -2,5 +2,5 @@ from . import main
 
 
 @main.route("/template")
-def template():
+async def template():
     return "This is a template plugin."

@@ -11,7 +11,7 @@ from .config import Config, WorkMode
 from ...manager import suc, warn, err
 
 
-def request_data(data: Optional[Any] = None) -> Optional[Dict[str, Any]]:
+async def request_data(data: Optional[Any] = None) -> Optional[Dict[str, Any]]:
     """向 PTAssist 原版服务端请求数据
 
     Args:
@@ -37,7 +37,7 @@ def request_data(data: Optional[Any] = None) -> Optional[Dict[str, Any]]:
 
 
 @main.route("/assist/total/room", methods=["GET"])
-def get_room_total() -> Tuple[Dict[str, Any], int]:
+async def get_room_total() -> Tuple[Dict[str, Any], int]:
     """获取分会场总数
 
     Returns:
@@ -51,7 +51,7 @@ def get_room_total() -> Tuple[Dict[str, Any], int]:
 
 
 @main.route("/assist/total/round", methods=["GET"])
-def get_round_total() -> Tuple[str, int]:
+async def get_round_total() -> Tuple[str, int]:
     """获取轮次总数
 
     Returns:
@@ -65,7 +65,7 @@ def get_round_total() -> Tuple[str, int]:
 
 
 @main.route("/assist/roomdata", methods=["POST"])
-def roomdata() -> Tuple[Dict[str, Any], int]:
+async def roomdata() -> Tuple[Dict[str, Any], int]:
     """获取指定会场的数据
 
     POST 表单信息:

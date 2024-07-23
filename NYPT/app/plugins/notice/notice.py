@@ -6,7 +6,7 @@ from ...manager import suc, err, escape_tag
 
 
 @main.route("/notice/total", methods=['GET'])
-def notice_total() -> Tuple[str, int]:
+async def notice_total() -> Tuple[str, int]:
     """获取公告总数
 
     Returns:
@@ -25,7 +25,7 @@ def notice_total() -> Tuple[str, int]:
 
 
 @main.route("/notice/<int:page>", methods=['GET'])
-def notice(page: int) -> Tuple[str, int]:
+async def notice(page: int) -> Tuple[str, int]:
     """获取指定编号的公告
 
     Args:

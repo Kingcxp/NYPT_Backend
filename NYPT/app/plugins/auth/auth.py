@@ -13,7 +13,7 @@ from ..utils.email.email import send_mail
 
 
 @main.route("/auth/id", methods=["GET"])
-def require_id() -> Tuple[Dict[str, Any], int]:
+async def require_id() -> Tuple[Dict[str, Any], int]:
     """返回 session 中储存的用户标识
 
     Returns:
@@ -31,7 +31,7 @@ def require_id() -> Tuple[Dict[str, Any], int]:
 
 
 @main.route("/auth/verify", methods=["POST"])
-def verify_email() -> Tuple[Dict[str, Any], int]:
+async def verify_email() -> Tuple[Dict[str, Any], int]:
     """生成验证码并通过邮件发送到指定邮箱
     将验证码存储在session中
 
@@ -70,7 +70,7 @@ def verify_email() -> Tuple[Dict[str, Any], int]:
     
 
 @main.route("/auth/deprecate", methods=["GET"])
-def deprecate() -> Tuple[Dict[str, Any], int]:
+async def deprecate() -> Tuple[Dict[str, Any], int]:
     """立即销毁session中的验证码
 
     Returns:
@@ -85,7 +85,7 @@ def deprecate() -> Tuple[Dict[str, Any], int]:
     
 
 @main.route("/auth/logout", methods=["GET"])
-def logout() -> Tuple[Dict[str, Any], int]:
+async def logout() -> Tuple[Dict[str, Any], int]:
     """登出，清空 session 中的登录信息
 
     Returns:
@@ -106,7 +106,7 @@ def logout() -> Tuple[Dict[str, Any], int]:
 
 
 @main.route("/auth/login", methods=["POST"])
-def login() -> Tuple[Dict[str, Any], int]:
+async def login() -> Tuple[Dict[str, Any], int]:
     """登录，在 session 中保存登录信息
 
     POST 表单信息:
@@ -142,7 +142,7 @@ def login() -> Tuple[Dict[str, Any], int]:
 
 
 @main.route("/auth/register", methods=["POST"])
-def register() -> Tuple[Dict[str, Any], int]:
+async def register() -> Tuple[Dict[str, Any], int]:
     """注册，收到注册请求并加入 PENDING_REQUEST
 
     POST 表单信息：
@@ -209,7 +209,7 @@ def register() -> Tuple[Dict[str, Any], int]:
 
 
 @main.route("/auth/teaminfo/fetch", methods=["GET"])
-def team_info_fetch() -> Tuple[Dict[str, Any], int]:
+async def team_info_fetch() -> Tuple[Dict[str, Any], int]:
     """Team 用户获取队伍成员信息
 
     Returns:
@@ -237,7 +237,7 @@ def team_info_fetch() -> Tuple[Dict[str, Any], int]:
 
 
 @main.route("/auth/teaminfo/save", methods=["POST"])
-def team_info_save() -> Tuple[Dict[str, Any], int]:
+async def team_info_save() -> Tuple[Dict[str, Any], int]:
     """Team 用户保存队伍成员信息
 
     POST 表单信息：
@@ -271,7 +271,7 @@ def team_info_save() -> Tuple[Dict[str, Any], int]:
 
 
 @main.route("/auth/userdata/<string:which>", methods=["GET"])
-def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
+async def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
     """获得已登录用户的信息
 
     通过路由传入：
