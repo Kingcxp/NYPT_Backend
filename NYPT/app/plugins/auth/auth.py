@@ -50,10 +50,10 @@ async def verify_email() -> Tuple[Dict[str, Any], int]:
     if (last_time := session.get("last_captcha_time")) is not None and (time_left := timeout - (time.time() - last_time)) > 0.0:
         warn("POST", "/auth/verify", f"400 Bad Request: 请在 {time_left} 秒后再发送验证码！")
         return {
-            "time_left": {ceil(time_left)},
+            "time_left": ceil(time_left),
             "msg": f"请在 {ceil(time_left)} 秒后再发送验证码！"
         }, 400
-    if send_mail(
+    if await send_mail(
         target=email, sender_name="NYPT",
         title="验证邮件", msg=Config.verify_msg % captcha
     ):

@@ -9,7 +9,7 @@ from rich.table import Table
 
 from . import interface, next_uid, Index, next_team, next_volunteer, str_decode
 from .config import Config
-from ..utils.email.email import send_mail
+from ..utils.email.email import send_mail_sync
 from ...manager import CommandInterface, logger, console
 
 
@@ -480,7 +480,7 @@ class AcceptRequest(CommandInterface):
             MEMBER="",
             AWARD=""
         )
-        if not send_mail(
+        if not send_mail_sync(
             target=email, sender_name="NYPT",
             title="您的注册申请已经通过！", msg=Config.accepted_msg % (realname, password)
         ):
@@ -514,7 +514,7 @@ class RejectRequest(CommandInterface):
             logger.opt(colors=True).info(f"<r>获取 <y>id={rid}</y> 的请求信息失败：请求不存在！</r>")
             return True
         email = request[Index.EMAIL.value]
-        if not send_mail(
+        if not send_mail_sync(
             target=email, sender_name="NYPT",
             title="您的注册请求被拒绝！", msg=Config.rejected_msg % ("".join(args))
         ):
