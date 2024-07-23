@@ -1,6 +1,7 @@
 import os
 import socket
 import struct
+import aiofiles
 
 from json import dumps, loads
 from typing import Tuple, Dict, Any, Optional
@@ -108,7 +109,7 @@ async def roomdata() -> Tuple[Dict[str, Any], int]:
         else:
             try:
                 suc("POST", "/assist/roomdata", f"[OFFLINE]: 读取<e>{file_path}</e>...")
-                with open(file_path, "r", encoding='utf-8') as file:
+                async with aiofiles.open(file_path, "r", encoding="utf-8") as file:
                     file_json = loads("".join(file.readlines()))
             except:
                 err("POST", "/assist/roomdata", "本地数据读取失败！")

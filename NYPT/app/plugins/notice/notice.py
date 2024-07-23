@@ -1,3 +1,6 @@
+import os
+import aiofiles
+
 from typing import Tuple
 
 from . import main
@@ -14,11 +17,8 @@ async def notice_total() -> Tuple[str, int]:
     """
     tot: int = 0
     for i in range(1, 100):
-        try:
-            f = open(Config.file_path + f"notice{i}.html", "r")
-        except:
+        if not os.path.exists(Config.file_path + f"notice{i}.html"):
             break
-        f.close()
         tot += 1
     suc("GET", "/notice/total", f"200 OK")
     return str(tot), 200
@@ -35,12 +35,10 @@ async def notice(page: int) -> Tuple[str, int]:
         Tuple[str, int]: 找到文件返回 200(OK)，否则返回 404(Not Found)
     """
     page_path = Config.file_path + f"notice{page}.html"
-    try:
-        f = open(page_path, "r")
-    except:
+    if not os.path.exists(page_path):
         err("GET", f"/notice/{escape_tag('<int:page>')}", f"404 Not Found: Notice not found.")
         return "", 404
-    lines = f.readlines()
-    f.close()
+    async with aiofiles.open(page_path, "r", encoding="utf-8") as f:
+        content = await f.read()
     suc("GET", f"/notice/{escape_tag('<int:page>')}", f"200 OK")
-    return "\n".join(lines), 200
+    return content, 200
