@@ -2,6 +2,7 @@ flask
 flask[async]
 flask_cors
 flask-session
+asyncio
 aiofile
 aiosmtplib
 psutil

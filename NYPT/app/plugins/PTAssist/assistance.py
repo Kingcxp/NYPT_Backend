@@ -1,6 +1,6 @@
 import os
-import socket
 import struct
+import asyncio
 import aiofiles
 
 from json import dumps, loads
@@ -21,18 +21,19 @@ async def request_data(data: Optional[Any] = None) -> Optional[Dict[str, Any]]:
     Returns:
         Dict[str, Any]: 服务端返回数据，若请求失败，返回 None
     """
-    client = socket.socket()
     try:
-        client.connect((Config.server_url, Config.server_port))
+        reader, writer = await asyncio.open_connection(Config.server_url, Config.server_port)
         json_data = dumps(data).encode("utf-8")
-        client.send(struct.pack('>H', len(json_data)) + json_data)
-        length_bytes = client.recv(2)
+        writer.write(struct.pack('>H', len(json_data)) + json_data)
+        await writer.drain()
+        length_bytes = await reader.readexactly(2)
         length = struct.unpack('>H', length_bytes)[0]
-        recv_data = loads(client.recv(length).decode('utf-8'))
+        recv_data = loads((await reader.readexactly(length)).decode('utf-8'))
     except:
         recv_data = None
     finally:
-        client.close()
+        writer.close()
+        await writer.wait_closed()
 
     return recv_data
 
