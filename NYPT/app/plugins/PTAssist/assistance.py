@@ -29,7 +29,8 @@ async def request_data(data: Optional[Any] = None) -> Optional[Dict[str, Any]]:
         length_bytes = await reader.readexactly(2)
         length = struct.unpack('>H', length_bytes)[0]
         recv_data = loads((await reader.readexactly(length)).decode('utf-8'))
-    except:
+    except Exception as e:
+        print(e)
         recv_data = None
     finally:
         writer.close()
@@ -111,8 +112,9 @@ async def roomdata() -> Tuple[Dict[str, Any], int]:
             try:
                 suc("POST", "/assist/roomdata", f"[OFFLINE]: 读取<e>{file_path}</e>...")
                 async with aiofiles.open(file_path, "r", encoding="utf-8") as file:
-                    file_json = loads("".join(file.readlines()))
-            except:
+                    file_json = loads("".join(await file.readlines()))
+            except Exception as e:
+                print(e)
                 err("POST", "/assist/roomdata", "本地数据读取失败！")
                 return {
                     "msg": "本地数据读取失败！"
