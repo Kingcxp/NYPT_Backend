@@ -57,7 +57,6 @@ class HelpCommand(CommandInterface):
             logger.opt(colors=True).info('<y>帮助：</y>')
             logger.opt(colors=True).info('<c>输入</c> <y>help</y> 来展示这段信息')
             logger.opt(colors=True).info('<c>输入</c> <y>info</y> 展示运行环境信息')
-            logger.opt(colors=True).info('<c>输入</c> <y>clear</y> 清空控制台缓冲区')
             logger.opt(colors=True).info('<c>输入</c> <y>list-commands</y> 查看所有的命令信息')
             logger.opt(colors=True).info('<c>输入</c> <y>quit</y>, <y>stop</y> 或者 <y>exit</y> 来终止服务')
             logger.opt(colors=True).info('<e>提示：</e> 你可以在 <y>help</y> 命令之后，加上 <c>若干条</c> 命令名称来查看 <g>这些命令的详细信息</g>！')
@@ -102,25 +101,6 @@ class InfoCommand(CommandInterface):
         return True
     
 
-class ClearCommand(CommandInterface):
-
-    @property
-    def command(self) -> str:
-        return 'clear'
-    
-    @property
-    def description(self) -> str:
-        return '清除屏幕缓冲区'
-    
-    @property
-    def usage(self) -> str:
-        return 'clear'
-    
-    def execute(self, args: List[str]) -> bool:
-        os.system('cls' if os.name == 'nt' else 'clear')
-        return True
-    
-
 class ListCommands(CommandInterface):
     @property
     def command(self) -> str:
@@ -153,24 +133,28 @@ def close_server() -> None:
     logger.opt(colors=True).info("<r>A</r><y>p</y><g>p</g><e>l</e><c>i</c><m>c</m><w>a</w><r>t</r><y>i</y><g>o</g><e>n</e> <c>c</c><m>l</m><w>o</w><r>s</r><y>e</y><g>d</g><e>.</e>")
 
 
-if __name__ == "__main__":
-    __name__ = "Flask"
+def main() -> None:
+    global app, command_manager, server, thread
     app, command_manager = create_app(Path(os.path.dirname(os.path.abspath(__file__))).resolve())
     command_manager.register_command(HelpCommand())
     command_manager.register_command(InfoCommand())
-    command_manager.register_command(ClearCommand())
     command_manager.register_command(ListCommands())
     server = create_server(app, host='0.0.0.0', port=8081)
     thread = Thread(target=server.run)
     thread.start()
     logger.opt(colors=True).info("<r>A</r><y>p</y><g>p</g><e>l</e><c>i</c><m>c</m><w>a</w><r>t</r><y>i</y><g>o</g><e>n</e> <c>s</c><m>t</m><w>a</w><r>r</r><y>t</y><g>e</g><e>d</e><c>.</c>")
+    original_stdout = sys.stdout
+    sys.stdout = sys.stderr
     logger.opt(colors=True).info("输入 <y>help</y> 查看帮助")
+    sys.stdout = original_stdout
 
     while True:
         try:
             command = input().strip()
         except KeyboardInterrupt:
             logger.opt(colors=True).critical("\r<r>使用了 CTRL+C! 这是不允许的，请使用正常命令终止服务!</r>")
+            continue
+        except:
             continue
         if command == "":
             continue
@@ -186,3 +170,8 @@ if __name__ == "__main__":
                 command_manager.parse_command(command_line[0], command_line[1:])
             if to_quit:
                 break
+
+
+if __name__ == "__main__":
+    __name__ = "Flask"
+    main()

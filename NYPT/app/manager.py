@@ -11,10 +11,15 @@ from pathlib import Path
 from loguru import logger
 from typing import Iterable, Optional, Set, Dict, List, Literal
 
+
+def log_handler(message) -> None:
+    print(message, end="")
+
 logger.remove()
-logger_id = logger.add(
-    sys.stdout,
+logger.add(
+    log_handler,
     level=0,
+    colorize=True,
     diagnose=False,
     format=str(
         "\r<g>{time:MM-DD HH:mm:ss}</g> "
@@ -24,7 +29,6 @@ logger_id = logger.add(
         "{message}\r"
     ),
 )
-__autodoc__ = {"logger_id": False}
 
 console: Console = Console()
 
@@ -113,6 +117,8 @@ class CommandManager:
             command (str): name of the command
             args (List[str]): arguments of the command
         """
+        original_stdout = sys.stdout
+        sys.stdout = sys.stderr
         executor = self.commands.get(command)
         if executor is None:
             logger.opt(colors=True).error(
@@ -132,7 +138,7 @@ class CommandManager:
                 console.print(f'命令简介: {self.commands_descriptions_and_usages[command][0]}')
                 console.print(f'命令用法: {self.commands_descriptions_and_usages[command][1]}')
                 return
-        except Exception as e:
+        except:
             print_exc()
             logger.opt(colors=True).critical(
                 f'"<y>{command}</y>": 命令在运行过程中 <r>出现错误</r>！'
@@ -141,6 +147,7 @@ class CommandManager:
         logger.opt(colors=True).success(
             f'"<y>{command}</y>": 命令 <g>运行成功</g>！'
         )
+        sys.stdout = original_stdout
 
     def register_command(self, command: CommandInterface, force_register: bool = False) -> bool:
         """Register one command to CommandManager.
@@ -152,6 +159,8 @@ class CommandManager:
         Returns:
             bool: whether the command is registered successfully, False if the command has been registered.
         """
+        original_stdout = sys.stdout
+        sys.stdout = sys.stderr
         if force_register == False and self.commands.get(command.command) is not None:
             logger.opt(colors=True).error(
                 f'命令已经存在: "<y>{command.command}</y>"! 可能的话，请修改你的命令名称。'
@@ -161,8 +170,9 @@ class CommandManager:
         self.commands[command.command] = command.execute
         self.commands_descriptions_and_usages[command.command] = (command.description, command.usage)
         logger.opt(colors=True).success(
-            f'<g>成功注册</g> 命令 "<y>{command.command}</y>！"'
+            f'<g>成功注册</g> 命令 "<y>{command.command}</y>"！'
         )
+        sys.stdout = original_stdout
         return True
 
 
