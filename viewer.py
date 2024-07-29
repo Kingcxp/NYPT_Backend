@@ -1,6 +1,6 @@
 import os
-import gc
 import sys
+import math
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/NYPT/")
 
@@ -8,60 +8,81 @@ from io import StringIO
 from threading import Thread
 from textual.app import App, ComposeResult, on
 from textual.binding import Binding, BindingType
-from textual.widgets import Header, Footer, TextArea, Input
-from textual.containers import Horizontal, Vertical
+from textual.widgets import Header, Footer, Label, Input
+from textual.containers import Horizontal, Vertical, VerticalScroll
+from rich.text import Text
 from typing import ClassVar, List
 
 from NYPT.launcher import main
 
 
+def parse_rich(text: str) -> Text:
+    parsed_text = Text.from_ansi(text)
+    return parsed_text
+
+
+class RichOutput(StringIO):
+    def __init__(self, rich_log: Label, scroll: VerticalScroll) -> None:
+        super().__init__()
+        self.rich_log = rich_log
+        self.scroll = scroll
+
+    def write(self, s: str) -> None:
+        super().write(s)
+        is_maximum: bool = self.scroll.is_vertical_scroll_end
+        self.rich_log.update(parse_rich(self.getvalue()))
+        if is_maximum:
+            self.scroll.scroll_end(animate=False)
+
+
 class MainApp(App):
 
     TITLE: str = "NYPT Backend"
+    DEFAULT_CSS = \
+    """
+    VerticalScroll { border: solid white; }
+    """
     BINDINGS: ClassVar[List[BindingType]] = [
         Binding("escape", "quit", "Quit App"),
         Binding("ctrl+s", "toggle_dark", "Toggle Dark Mode", priority=True)
     ]
 
     def compose(self) -> ComposeResult:
+        self.input = Input(value="> ", id="main-input")
+        self.log_left = Label(id="main-log-left")
+        self.log_right = Label(id="main-log-right")
+        self.scroll_left = VerticalScroll(self.log_left)
+        self.scroll_right = VerticalScroll(self.log_right)
         yield Header()
         yield Vertical(
             Horizontal(
-                TextArea(disabled=True, id="main-textarea-left"),
-                TextArea(disabled=True, id="main-textarea-right")
+                self.scroll_left,
+                self.scroll_right
             ),
-            Input(value="> ", id="main-input")
+            self.input
         )
         yield Footer()
 
     def update(self) -> None:
-        input: Input = self.query_one("#main-input")
-        textarea_left: TextArea = self.query_one("#main-textarea-left")
-        textarea_right: TextArea = self.query_one("#main-textarea-right")
-
-        if input.cursor_position < 2:
-            input.cursor_position = 2
-
-        try:
-            textarea_left.text = self.stdout.getvalue()
-            textarea_right.text = self.stderr.getvalue()
-        except:
-            pass
+        self.input.focus()
+        
+        if self.input.cursor_position < 2:
+            self.input.cursor_position = 2
 
     def on_mount(self) -> None:
         self.original_stdout = sys.stdout
         self.original_stderr = sys.stderr
         self.original_stdin = sys.stdin
 
-        self.stdout = StringIO()
-        self.stderr = StringIO()
+        self.stdout = RichOutput(self.log_left, self.scroll_left)
+        self.stderr = RichOutput(self.log_right, self.scroll_right)
         self.stdin = StringIO()
 
         sys.stdout = self.stdout
         sys.stderr = self.stderr
         sys.stdin = self.stdin
 
-        self.set_interval(1/15, self.update)
+        self.set_interval(1/60, self.update)
         
         self.process = Thread(target=main)
         self.process.start()
@@ -97,21 +118,9 @@ class MainApp(App):
         event.input.value = "> "
         event.input.cursor_position = 2
 
-        if command == "restart":
-            self.query_one("#main-textarea-left").text = ""
-            self.query_one("#main-textarea-right").text = ""
-            
-            self.stdin.write("exit\n")
-            self.sedin.seek(0)
-            self.stdin.flush()
-            self.process.join()
-            self.process = Thread(target=main)
-            gc.collect()
-            self.process.start()
-            return
-        elif command == "clear":
+        if command == "clear":
             self.stderr.truncate(0)
-            self.query_one("#main-textarea-right").text = ""
+            self.log_right.update("")
             return
 
         self.stdin.truncate(0)

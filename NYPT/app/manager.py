@@ -26,46 +26,46 @@ def get_caller_name():
 
 def warning(message: str):
     console.print(
-        f"\r[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
+        f"[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
         f"[[bold][yellow]WARNING[/yellow][/bold]] "
         f"[cyan]{get_caller_name()}[/cyan] | "
-        f"{message}\r"
+        f"{message}"
     )
 
 
 def success(message: str):
     console.print(
-        f"\r[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
+        f"[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
         f"[[bold][green]SUCCESS[/green][/bold]] "
         f"[cyan]{get_caller_name()}[/cyan] | "
-        f"{message}\r"
+        f"{message}"
     )
 
 
 def error(message: str):
     console.print(
-        f"\r[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
+        f"[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
         f"[[bold][red]ERROR[/red][/bold]] "
         f"[cyan]{get_caller_name()}[/cyan] | "
-        f"{message}\r"
+        f"{message}"
     )
 
 
 def info(message: str):
     console.print(
-        f"\r[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
+        f"[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
         f"[[bold][white]INFO[/white][/bold]] "
         f"[cyan]{get_caller_name()}[/cyan] | "
-        f"{message}\r"
+        f"{message}"
     )
 
 
 def critical(message: str):
     console.print(
-        f"\r[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
+        f"[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
         f"[[bold][black][on red]CRITICAL[/on red][/black][/bold]] "
         f"[cyan]{get_caller_name()}[/cyan] | "
-        f"{message}\r"
+        f"{message}"
     )
 
 
@@ -151,6 +151,7 @@ class CommandManager:
         """
         original_stdout = sys.stdout
         sys.stdout = sys.stderr
+        command = command.replace("\x00", "")
         executor = self.commands.get(command)
         if executor is None:
             console.error(

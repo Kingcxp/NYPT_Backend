@@ -152,7 +152,7 @@ def main() -> None:
         try:
             command = input().strip()
         except KeyboardInterrupt:
-            console.critical("\r[red]使用了 CTRL+C! 这是不允许的，请使用正常命令终止服务![/red]")
+            console.critical("[red]使用了 CTRL+C! 这是不允许的，请使用正常命令终止服务![/red]")
             continue
         except:
             continue
@@ -160,13 +160,17 @@ def main() -> None:
             continue
         else:
             to_quit: bool = False
-            commands = command.split("&&")
+            commands = command.replace("\x00", "").split("&&")
             for _command in commands:
                 command_line = [c.strip() for c in _command.split()]
-                if command_line[0] == 'exit' or command_line[0] == 'quit' or command_line[0] == 'stop':
-                    close_server()
-                    to_quit = True
-                    break
+                try:
+                    if command_line[0] == 'exit' or command_line[0] == 'quit' or command_line[0] == 'stop':
+                        close_server()
+                        to_quit = True
+                        break
+                except:
+                    # Unknown Error
+                    continue
                 command_manager.parse_command(command_line[0], command_line[1:])
             if to_quit:
                 break
