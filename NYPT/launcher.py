@@ -11,7 +11,7 @@ from pathlib import Path
 from threading import Thread
 
 from app import create_app
-from app.manager import logger, console, CommandInterface
+from app.manager import console, CommandInterface
  
 def _async_raise(tid, exctype):
     """raises the exception, performs cleanup if needed"""
@@ -54,23 +54,23 @@ class HelpCommand(CommandInterface):
     
     def execute(self, args: List[str]) -> bool:
         if len(args) == 0:
-            logger.opt(colors=True).info('<y>帮助：</y>')
-            logger.opt(colors=True).info('<c>输入</c> <y>help</y> 来展示这段信息')
-            logger.opt(colors=True).info('<c>输入</c> <y>info</y> 展示运行环境信息')
-            logger.opt(colors=True).info('<c>输入</c> <y>list-commands</y> 查看所有的命令信息')
-            logger.opt(colors=True).info('<c>输入</c> <y>quit</y>, <y>stop</y> 或者 <y>exit</y> 来终止服务')
-            logger.opt(colors=True).info('<e>提示：</e> 你可以在 <y>help</y> 命令之后，加上 <c>若干条</c> 命令名称来查看 <g>这些命令的详细信息</g>！')
+            console.info('[yellow]帮助：[/yellow]')
+            console.info('[cyan]输入[/cyan] [yellow]help[/yellow] 来展示这段信息')
+            console.info('[cyan]输入[/cyan] [yellow]info[/yellow] 展示运行环境信息')
+            console.info('[cyan]输入[/cyan] [yellow]list-commands[/yellow] 查看所有的命令信息')
+            console.info('[cyan]输入[/cyan] [yellow]quit[/yellow], [yellow]stop[/yellow] 或者 [yellow]exit[/yellow] 来终止服务')
+            console.info('[blue]提示：[/blue] 你可以在 [yellow]help[/yellow] 命令之后，加上 [cyan]若干条[/cyan] 命令名称来查看 [green]这些命令的详细信息[/green]！')
         else:
             for arg in args:
                 command = command_manager.commands.get(arg)
                 print()
                 if command is None:
-                    logger.opt(colors=True).error(
-                        f'"<y>{arg}</y>" : <r>未找到</r> 命令！'
+                    console.error(
+                        f'"[yellow]{arg}[/yellow]" : [red]未找到[/red] 命令！'
                     )
                 else:
-                    logger.opt(colors=True).info(
-                        f'命令的 <m>简介</m> 和 <c>用法</c> 如下：'
+                    console.info(
+                        f'命令的 [magenta]简介[/magenta] 和 [cyan]用法[/cyan] 如下：'
                     )
                     console.print(f'命令名称: "{arg}"')
                     console.print(f'命令简介: {command_manager.commands_descriptions_and_usages[arg][0]}')
@@ -93,11 +93,11 @@ class InfoCommand(CommandInterface):
         return 'info'
     
     def execute(self, args: List[str]) -> bool:
-        logger.opt(colors=True).info('<c>当前运行路径:</c> <y>' + os.getcwd() + '</y>')
-        logger.opt(colors=True).info('<c>python 版本:</c> ' + sys.version)
+        console.info('[cyan]当前运行路径:[/cyan] [yellow]' + os.getcwd() + '[/yellow]')
+        console.info('[cyan]python 版本:[/cyan] ' + sys.version)
         repo = git.Repo(os.path.dirname(os.path.abspath(__file__)) + '/..')
-        logger.opt(colors=True).info("<c>当前提交 ID:</c> " + str(repo.commit()))
-        logger.opt(colors=True).info('<c>版本日期:</c> ' + str(repo.commit().committed_datetime))
+        console.info("[cyan]当前提交 ID:[/cyan] " + str(repo.commit()))
+        console.info('[cyan]版本日期:[/cyan] ' + str(repo.commit().committed_datetime))
         return True
     
 
@@ -130,7 +130,7 @@ def close_server() -> None:
         stop_thread(thread)
     except:
         thread.join()
-    logger.opt(colors=True).info("<r>A</r><y>p</y><g>p</g><e>l</e><c>i</c><m>c</m><w>a</w><r>t</r><y>i</y><g>o</g><e>n</e> <c>c</c><m>l</m><w>o</w><r>s</r><y>e</y><g>d</g><e>.</e>")
+    console.info("[red]A[/red][yellow]p[/yellow][green]p[/green][blue]l[/blue][cyan]i[/cyan][magenta]c[/magenta][white]a[/white][red]t[/red][yellow]i[/yellow][green]o[/green][blue]n[/blue] [cyan]c[/cyan][magenta]l[/magenta][white]o[/white][red]s[/red][yellow]e[/yellow][green]d[/green][blue].[/blue]")
 
 
 def main() -> None:
@@ -142,17 +142,17 @@ def main() -> None:
     server = create_server(app, host='0.0.0.0', port=8081)
     thread = Thread(target=server.run)
     thread.start()
-    logger.opt(colors=True).info("<r>A</r><y>p</y><g>p</g><e>l</e><c>i</c><m>c</m><w>a</w><r>t</r><y>i</y><g>o</g><e>n</e> <c>s</c><m>t</m><w>a</w><r>r</r><y>t</y><g>e</g><e>d</e><c>.</c>")
+    console.info("[red]A[/red][yellow]p[/yellow][green]p[/green][blue]l[/blue][cyan]i[/cyan][magenta]c[/magenta][white]a[/white][red]t[/red][yellow]i[/yellow][green]o[/green][blue]n[/blue] [cyan]s[/cyan][magenta]t[/magenta][white]a[/white][red]r[/red][yellow]t[/yellow][green]e[/green][blue]d[/blue][cyan].[/cyan]")
     original_stdout = sys.stdout
     sys.stdout = sys.stderr
-    logger.opt(colors=True).info("输入 <y>help</y> 查看帮助")
+    console.info("输入 [yellow]help[/yellow] 查看帮助")
     sys.stdout = original_stdout
 
     while True:
         try:
             command = input().strip()
         except KeyboardInterrupt:
-            logger.opt(colors=True).critical("\r<r>使用了 CTRL+C! 这是不允许的，请使用正常命令终止服务!</r>")
+            console.critical("\r[red]使用了 CTRL+C! 这是不允许的，请使用正常命令终止服务![/red]")
             continue
         except:
             continue

@@ -8,7 +8,6 @@ aiosmtplib
 psutil
 waitress
 uuid
-loguru
 sqlalchemy
 GitPython
 requests

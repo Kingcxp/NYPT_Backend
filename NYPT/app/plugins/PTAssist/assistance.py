@@ -104,13 +104,13 @@ async def roomdata() -> Tuple[Dict[str, Any], int]:
             Config.round_folder_name.format(id=round_id) + \
             Config.room_file_name.format(id=room_id)
         if not os.path.exists(file_path):
-            warn("POST", "/assist/roomdata", f"[OFFLINE]: <e>{file_path}</e> 未找到！")
+            warn("POST", "/assist/roomdata", f"[OFFLINE]: [blue]{file_path}[/blue] 未找到！")
             return {
                 "msg": "服务器配置为离线模式，本地数据未找到！"
             }, 404
         else:
             try:
-                suc("POST", "/assist/roomdata", f"[OFFLINE]: 读取<e>{file_path}</e>...")
+                suc("POST", "/assist/roomdata", f"[OFFLINE]: 读取[blue]{file_path}[/blue]...")
                 async with aiofiles.open(file_path, "r", encoding="utf-8") as file:
                     file_json = loads("".join(await file.readlines()))
             except Exception as e:

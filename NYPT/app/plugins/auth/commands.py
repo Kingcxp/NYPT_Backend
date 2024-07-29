@@ -10,7 +10,7 @@ from rich.table import Table
 from . import interface, next_uid, Index, next_team, next_volunteer, str_decode
 from .config import Config
 from ..utils.email.email import send_mail_sync
-from ...manager import CommandInterface, logger, console
+from ...manager import CommandInterface, console, console
 
 
 def generate_password(length: int, keyring: str = "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM") -> str:
@@ -54,13 +54,13 @@ class NewUser(CommandInterface):
             identity = args[3].split("-identity=")[1]
         query_user = interface.select_first("USER", where={"REALNAME": ("==", realname)})
         if query_user is not None:
-            logger.opt(colors=True).info(f"<r>用户名 <y>{realname}</y> 已经存在！</r>")
+            console.info(f"[red]用户名 [yellow]{realname}[/yellow] 已经存在！[/red]")
             return True
         query_user = interface.select_first("USER", where={"EMAIL": ("==", email)})
         if query_user is not None:
-            logger.opt(colors=True).info(f"<r>邮箱 <y>{email}</y> 已经存在！</r>")
+            console.info(f"[red]邮箱 [yellow]{email}[/yellow] 已经存在！[/red]")
             return True
-        logger.opt(colors=True).info(f"<g>正在创建用户 <y>{realname}</y> ...</g>")
+        console.info(f"[green]正在创建用户 [yellow]{realname}[/yellow] ...[/green]")
         user_id = next_uid()
         interface.insert("USER",
             UID=user_id,
@@ -75,7 +75,7 @@ class NewUser(CommandInterface):
             MEMBER="",
             AWARD=""
         )
-        logger.opt(colors=True).info(f"<g>新用户 <y>{realname}</y> 创建成功！</g>")
+        console.info(f"[green]新用户 [yellow]{realname}[/yellow] 创建成功！[/green]")
         return True
     
 
@@ -108,11 +108,11 @@ class DeleteUser(CommandInterface):
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
-            logger.opt(colors=True).info(f"<r>删除用户 {value_name}=<y>{value}</y> 失败：用户不存在！</r>")
+            console.info(f"[red]删除用户 {value_name}=[yellow]{value}[/yellow] 失败：用户不存在！[/red]")
             return True
-        logger.opt(colors=True).info(f"<r>正在删除用户 {value_name}=<y>{value}</y> ...</r>")
+        console.info(f"[red]正在删除用户 {value_name}=[yellow]{value}[/yellow] ...[/red]")
         interface.delete("USER", where={key: ("==", value)})
-        logger.opt(colors=True).info(f"<r>用户 {value_name}=<y>{value}</y> 删除成功！</r>")
+        console.info(f"[red]用户 {value_name}=[yellow]{value}[/yellow] 删除成功！[/red]")
         return True
     
 
@@ -145,18 +145,18 @@ class AddTag(CommandInterface):
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
-            logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户添加 tag 失败：用户不存在！</r>")
+            console.info(f"[red]为 {value_name}=[yellow]{value}[/yellow] 的用户添加 tag 失败：用户不存在！[/red]")
             return True
         tags: str = query_user[Index.TAGS.value]
         if args[1] in tags:
-            logger.opt(colors=True).info(f"<b>为 {value_name}=<y>{value}</y> 的用户添加 tag 失败：用户已经拥有该标签！</b>")
-        logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户添加 tag ...</g>")
+            console.info(f"[bold]为 {value_name}=[yellow]{value}[/yellow] 的用户添加 tag 失败：用户已经拥有该标签！[/bold]")
+        console.info(f"[green]正在为 {value_name}=[yellow]{value}[/yellow] 的用户添加 tag ...[/green]")
         if tags == "":
             tags = args[1]
         else:
             tags = tags + "|" + args[1]
         interface.update("USER", where={key: ("==", value)}, TAGS=tags)
-        logger.opt(colors=True).info(f"<g>为 {value_name}=<y>{value}</y> 的用户添加 tag 成功！</g>")
+        console.info(f"[green]为 {value_name}=[yellow]{value}[/yellow] 的用户添加 tag 成功！[/green]")
         return True
     
 
@@ -189,12 +189,12 @@ class RemoveTag(CommandInterface):
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
-            logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户移除 tag 失败：用户不存在！</r>")
+            console.info(f"[red]为 {value_name}=[yellow]{value}[/yellow] 的用户移除 tag 失败：用户不存在！[/red]")
             return True
         tags: str = query_user[Index.TAGS.value]
         if args[1] not in tags:
-            logger.opt(colors=True).info(f"<b>为 {value_name}=<y>{value}</y> 的用户移除 tag 失败：用户未拥有该标签！</b>")
-        logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户移除 tag ...</g>")
+            console.info(f"[bold]为 {value_name}=[yellow]{value}[/yellow] 的用户移除 tag 失败：用户未拥有该标签！[/bold]")
+        console.info(f"[green]正在为 {value_name}=[yellow]{value}[/yellow] 的用户移除 tag ...[/green]")
         if tags.startswith(args[1]):
             if "|" in tags:
                 tags = tags.replace(args[1] + "|", "")
@@ -203,7 +203,7 @@ class RemoveTag(CommandInterface):
         else:
             tags = tags.replace("|" + args[1], "")
         interface.update("USER", where={key: ("==", value)}, TAGS=tags)
-        logger.opt(colors=True).info(f"<g>为 {value_name}=<y>{value}</y> 的用户移除 tag 成功！</g>")
+        console.info(f"[green]为 {value_name}=[yellow]{value}[/yellow] 的用户移除 tag 成功！[/green]")
         return True
     
 
@@ -236,11 +236,11 @@ class SetIdentity(CommandInterface):
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
-            logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户更改 identity 失败：用户不存在！</r>")
+            console.info(f"[red]为 {value_name}=[yellow]{value}[/yellow] 的用户更改 identity 失败：用户不存在！[/red]")
             return True
-        logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户更改 identity ...</g>")
+        console.info(f"[green]正在为 {value_name}=[yellow]{value}[/yellow] 的用户更改 identity ...[/green]")
         interface.update("USER", where={key: ("==", value)}, IDENTITY=args[1])
-        logger.opt(colors=True).info(f"<g>为 {value_name}=<y>{value}</y> 的用户更改 identity 成功！</g>")
+        console.info(f"[green]为 {value_name}=[yellow]{value}[/yellow] 的用户更改 identity 成功！[/green]")
         return True
 
 
@@ -273,11 +273,11 @@ class SetPassword(CommandInterface):
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
-            logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户更改 password 失败：用户不存在！</r>")
+            console.info(f"[red]为 {value_name}=[yellow]{value}[/yellow] 的用户更改 password 失败：用户不存在！[/red]")
             return True
-        logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户更改 password ...</g>")
+        console.info(f"[green]正在为 {value_name}=[yellow]{value}[/yellow] 的用户更改 password ...[/green]")
         interface.update("USER", where={key: ("==", value)}, TOKEN=b64encode(args[1].encode('utf-8')).decode('utf-8'))
-        logger.opt(colors=True).info(f"<g>为 {value_name}=<y>{value}</y> 的用户更改 password 成功！</g>")
+        console.info(f"[green]为 {value_name}=[yellow]{value}[/yellow] 的用户更改 password 成功！[/green]")
         return True
     
 
@@ -310,7 +310,7 @@ class ShowPassword(CommandInterface):
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
-            logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户查找 password 失败：用户不存在！</r>")
+            console.info(f"[red]为 {value_name}=[yellow]{value}[/yellow] 的用户查找 password 失败：用户不存在！[/red]")
             return True
         console.print(b64decode(query_user[Index.TOKEN.value].encode("utf-8")).decode("utf-8"), style="bold green")
         return True
@@ -345,11 +345,11 @@ class SetRealname(CommandInterface):
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
-            logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户更改 realname 失败：用户不存在！</r>")
+            console.info(f"[red]为 {value_name}=[yellow]{value}[/yellow] 的用户更改 realname 失败：用户不存在！[/red]")
             return True
-        logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户更改 realname ...</g>")
+        console.info(f"[green]正在为 {value_name}=[yellow]{value}[/yellow] 的用户更改 realname ...[/green]")
         interface.update("USER", where={key: ("==", value)}, REALNAME=args[1])
-        logger.opt(colors=True).info(f"<g>为 {value_name}=<y>{value}</y> 的用户更改 realname 成功！</g>")
+        console.info(f"[green]为 {value_name}=[yellow]{value}[/yellow] 的用户更改 realname 成功！[/green]")
         return True
     
 
@@ -382,11 +382,11 @@ class SetName(CommandInterface):
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
-            logger.opt(colors=True).info(f"<r>为 {value_name}=<y>{value}</y> 的用户更改 name 失败：用户不存在！</r>")
+            console.info(f"[red]为 {value_name}=[yellow]{value}[/yellow] 的用户更改 name 失败：用户不存在！[/red]")
             return True
-        logger.opt(colors=True).info(f"<g>正在为 {value_name}=<y>{value}</y> 的用户更改 name ...</g>")
+        console.info(f"[green]正在为 {value_name}=[yellow]{value}[/yellow] 的用户更改 name ...[/green]")
         interface.update("USER", where={key: ("==", value)}, NAME=args[1])
-        logger.opt(colors=True).info(f"<g>为 {value_name}=<y>{value}</y> 的用户更改 name 成功！</g>")
+        console.info(f"[green]为 {value_name}=[yellow]{value}[/yellow] 的用户更改 name 成功！[/green]")
         return True
     
 
@@ -446,12 +446,12 @@ class AcceptRequest(CommandInterface):
         rid: int = int(args[0].split("-id=")[1])
         request = interface.select_first("PENDING_REQUEST", where={"RID": ("==", rid)})
         if request is None:
-            logger.opt(colors=True).info(f"<r>获取 <y>id={rid}</y> 的请求信息失败：请求不存在！</r>")
+            console.info(f"[red]获取 [yellow]id={rid}[/yellow] 的请求信息失败：请求不存在！[/red]")
             return True
         email = request[Index.EMAIL.value]
         email_query = interface.select_first("USER", where={"EMAIL": ("==", email)})
         if email_query is not None:
-            logger.opt(colors=True).info(f"<r><y>email={email}</y> 的用户已经存在！</r>")
+            console.info(f"[red][yellow]email={email}[/yellow] 的用户已经存在！[/red]")
         realname: Optional[str] = None
         password: Optional[str] = None
         match request[Index.IDENTITY.value]:
@@ -465,7 +465,7 @@ class AcceptRequest(CommandInterface):
                 realname = next_volunteer("B")
                 password = generate_password(Config.volunteer_b_pwd_len)
             case _:
-                logger.opt(colors=True).info(f"<r>这是什么身份？不应该有这种身份！你只能拒绝它！</r>")
+                console.info(f"[red]这是什么身份？不应该有这种身份！你只能拒绝它！[/red]")
                 return True
         interface.insert("USER",
             UID=next_uid(),
@@ -484,10 +484,10 @@ class AcceptRequest(CommandInterface):
             target=email, sender_name="NYPT",
             title="您的注册申请已经通过！", msg=Config.accepted_msg % (realname, password)
         ):
-            logger.opt(colors=True).info(f"<r>发送邮件发生错误！请尝试重新通过申请！</r>")
+            console.info(f"[red]发送邮件发生错误！请尝试重新通过申请！[/red]")
             return True
         interface.delete("PENDING_REQUEST", where={"RID": ("==", rid)})
-        logger.opt(colors=True).info(f"<g>已经通过该注册请求！</g>")
+        console.info(f"[green]已经通过该注册请求！[/green]")
         return True
 
 
@@ -511,17 +511,17 @@ class RejectRequest(CommandInterface):
         args = args[1:]
         request = interface.select_first("PENDING_REQUEST", where={"RID": ("==", rid)})
         if request is None:
-            logger.opt(colors=True).info(f"<r>获取 <y>id={rid}</y> 的请求信息失败：请求不存在！</r>")
+            console.info(f"[red]获取 [yellow]id={rid}[/yellow] 的请求信息失败：请求不存在！[/red]")
             return True
         email = request[Index.EMAIL.value]
         if not send_mail_sync(
             target=email, sender_name="NYPT",
             title="您的注册请求被拒绝！", msg=Config.rejected_msg % ("".join(args))
         ):
-            logger.opt(colors=True).info(f"<r>发送邮件发生错误！请尝试重新拒绝申请！</r>")
+            console.info(f"[red]发送邮件发生错误！请尝试重新拒绝申请！[/red]")
             return True
         interface.delete("PENDING_REQUEST", where={"RID": ("==", rid)})
-        logger.opt(colors=True).info(f"<g>已经拒绝该注册请求！</g>")
+        console.info(f"[green]已经拒绝该注册请求！[/green]")
         return True
     
 
@@ -572,7 +572,7 @@ class UserInfo(CommandInterface):
             return False
         query_user = interface.select_first("USER", where={key: ("==", value)})
         if query_user is None:
-            logger.opt(colors=True).info(f"<r>获取用户 {value_name}=<y>{value}</y> 的信息失败：用户不存在！</r>")
+            console.info(f"[red]获取用户 {value_name}=[yellow]{value}[/yellow] 的信息失败：用户不存在！[/red]")
             return True
         self.print_user(query_user)
         return True
@@ -757,5 +757,5 @@ class ExportConfig(CommandInterface):
             sheet_team.write(index, 1, team[Index.REALNAME.value])
         
         workbook.save(os.path.dirname(os.path.abspath(__file__)) + "/server_config.xlsx")
-        logger.opt(colors=True).info(f"<g>配置文件导出成功！</g>")
+        console.info(f"[green]配置文件导出成功！[/green]")
         return True

@@ -5,8 +5,7 @@ from typing import Tuple
 
 from . import main
 from .config import Config
-from ...manager import suc, err, escape_tag
-
+from ...manager import suc, err
 
 @main.route("/notice/total", methods=['GET'])
 async def notice_total() -> Tuple[str, int]:
@@ -36,9 +35,9 @@ async def notice(page: int) -> Tuple[str, int]:
     """
     page_path = Config.file_path + f"notice{page}.html"
     if not os.path.exists(page_path):
-        err("GET", f"/notice/{escape_tag('<int:page>')}", f"404 Not Found: Notice not found.")
+        err("GET", f"/notice/{'<int:page>'}", f"404 Not Found: Notice not found.")
         return "", 404
     async with aiofiles.open(page_path, "r", encoding="utf-8") as f:
         content = await f.read()
-    suc("GET", f"/notice/{escape_tag('<int:page>')}", f"200 OK")
+    suc("GET", f"/notice/{'<int:page>'}", f"200 OK")
     return content, 200

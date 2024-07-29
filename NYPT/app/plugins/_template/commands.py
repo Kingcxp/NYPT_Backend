@@ -1,6 +1,6 @@
 from typing import List
 
-from ...manager import CommandInterface, logger
+from ...manager import CommandInterface, console
 
 
 class TestCommand(CommandInterface):
@@ -17,5 +17,5 @@ class TestCommand(CommandInterface):
         return 'template-test'
     
     def execute(self, args: List[str]) -> bool:
-        logger.opt(colors=True).info(f'<y>Template test command!</y>')
+        console.info(f'[yellow]Template test command![/yellow]')
         return True

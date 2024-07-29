@@ -1,6 +1,7 @@
-import re
 import sys
+import inspect
 import pkgutil
+import datetime
 import importlib
 
 from rich.console import Console
@@ -8,52 +9,83 @@ from traceback import print_exc
 from abc import abstractmethod, ABCMeta
 from flask import Flask
 from pathlib import Path
-from loguru import logger
 from typing import Iterable, Optional, Set, Dict, List, Literal
 
 
-def log_handler(message) -> None:
-    print(message, end="")
-
-logger.remove()
-logger.add(
-    log_handler,
-    level=0,
-    colorize=True,
-    diagnose=False,
-    format=str(
-        "\r<g>{time:MM-DD HH:mm:ss}</g> "
-        "[<lvl>{level}</lvl>] "
-        "<c>{name}</c> | "
-        # "<c>{function}:{line}</c>| "
-        "{message}\r"
-    ),
-)
-
 console: Console = Console()
+
+def get_caller_name():
+    current_frame = inspect.currentframe()
+    try:
+        caller_frame = inspect.getouterframes(current_frame, 2)[1]
+        caller_module = inspect.getmodule(caller_frame[0])
+        return caller_module.__name__
+    finally:
+        del current_frame
+
+
+def warning(message: str):
+    console.print(
+        f"\r[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
+        f"[[bold][yellow]WARNING[/yellow][/bold]] "
+        f"[cyan]{get_caller_name()}[/cyan] | "
+        f"{message}\r"
+    )
+
+
+def success(message: str):
+    console.print(
+        f"\r[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
+        f"[[bold][green]SUCCESS[/green][/bold]] "
+        f"[cyan]{get_caller_name()}[/cyan] | "
+        f"{message}\r"
+    )
+
+
+def error(message: str):
+    console.print(
+        f"\r[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
+        f"[[bold][red]ERROR[/red][/bold]] "
+        f"[cyan]{get_caller_name()}[/cyan] | "
+        f"{message}\r"
+    )
+
+
+def info(message: str):
+    console.print(
+        f"\r[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
+        f"[[bold][white]INFO[/white][/bold]] "
+        f"[cyan]{get_caller_name()}[/cyan] | "
+        f"{message}\r"
+    )
+
+
+def critical(message: str):
+    console.print(
+        f"\r[green]{datetime.datetime.now().strftime('%m-%d %H:%M:%S')}[/green] "
+        f"[[bold][black][on red]CRITICAL[/on red][/black][/bold]] "
+        f"[cyan]{get_caller_name()}[/cyan] | "
+        f"{message}\r"
+    )
+
+
+console.warning = warning
+console.error = error
+console.success = success
+console.info = info
+console.critical = critical
 
 
 def warn(method: Literal["GET", "POST"], router: str, msg: str):
-    logger.opt(colors=True).warning(f"<y>{method}</y> '{router}' <m>{msg}</m>")
+    console.warning(f"[yellow]{method}[/yellow] '{router}' [magenta]{msg}[/magenta]")
 
 
 def suc(method: Literal["GET", "POST"], router: str, msg: str):
-    logger.opt(colors=True).success(f"<y>{method}</y> '{router}' <g>{msg}</g>")
+    console.success(f"[yellow]{method}[/yellow] '{router}' [green]{msg}[/green]")
 
 
 def err(method: Literal["GET", "POST"], router: str, msg: str):
-    logger.opt(colors=True).error(f"<y>{method}</y> '{router}' <r>{msg}</r>")
-
-
-def escape_tag(s: str) -> str:
-    """用于记录带颜色日志时转义 `<tag>` 类型特殊标签
-
-    参考: [loguru color 标签](https://loguru.readthedocs.io/en/stable/api/logger.html#color)
-
-    参数:
-        s: 需要转义的字符串
-    """
-    return re.sub(r"</?((?:[fb]g\s)?[^<>\s]*)>", r"\\\g<0>", s)
+    console.error(f"[yellow]{method}[/yellow] '{router}' [red]{msg}[/red]")
 
 
 class CommandInterface(metaclass=ABCMeta):
@@ -121,18 +153,18 @@ class CommandManager:
         sys.stdout = sys.stderr
         executor = self.commands.get(command)
         if executor is None:
-            logger.opt(colors=True).error(
-                f'"<y>{command}</y>" : <r>未找到</r> 命令！'
+            console.error(
+                f'"[yellow]{command}[/yellow]" : [red]未找到[/red] 命令！'
             )
             return
         try:
             execute_result = executor(args)
             if not execute_result:
-                logger.opt(colors=True).warning(
-                    f'"<y>{command}</y>": 指令运行 <r>失败</r>, <y>可能是</y> 因为使用了 <b>错误的参数</b>'
+                console.warning(
+                    f'"[yellow]{command}[/yellow]": 指令运行 [red]失败[/red], [yellow]可能是[/yellow] 因为使用了 [bold]错误的参数[/bold]'
                 )
-                logger.opt(colors=True).info(
-                    f'命令的 <m>简介</m> 和 <c>用法</c> 如下：'
+                console.info(
+                    f'命令的 [magenta]简介[/magenta] 和 [cyan]用法[/cyan] 如下：'
                 )
                 console.print(f'命令名称: "{command}"')
                 console.print(f'命令简介: {self.commands_descriptions_and_usages[command][0]}')
@@ -140,12 +172,12 @@ class CommandManager:
                 return
         except:
             print_exc()
-            logger.opt(colors=True).critical(
-                f'"<y>{command}</y>": 命令在运行过程中 <r>出现错误</r>！'
+            console.critical(
+                f'"[yellow]{command}[/yellow]": 命令在运行过程中 [red]出现错误[/red]！'
             )
             return
-        logger.opt(colors=True).success(
-            f'"<y>{command}</y>": 命令 <g>运行成功</g>！'
+        console.success(
+            f'"[yellow]{command}[/yellow]": 命令 [green]运行成功[/green]！'
         )
         sys.stdout = original_stdout
 
@@ -162,15 +194,15 @@ class CommandManager:
         original_stdout = sys.stdout
         sys.stdout = sys.stderr
         if force_register == False and self.commands.get(command.command) is not None:
-            logger.opt(colors=True).error(
-                f'命令已经存在: "<y>{command.command}</y>"! 可能的话，请修改你的命令名称。'
-                f'"<y>{command.command}</y>": 命令 <m>已经存在</m>！'
+            console.error(
+                f'命令已经存在: "[yellow]{command.command}[/yellow]"! 可能的话，请修改你的命令名称。'
+                f'"[yellow]{command.command}[/yellow]": 命令 [magenta]已经存在[/magenta]！'
             )
             return False
         self.commands[command.command] = command.execute
         self.commands_descriptions_and_usages[command.command] = (command.description, command.usage)
-        logger.opt(colors=True).success(
-            f'<g>成功注册</g> 命令 "<y>{command.command}</y>"！'
+        console.success(
+            f'[green]成功注册[/green] 命令 "[yellow]{command.command}[/yellow]"！'
         )
         sys.stdout = original_stdout
         return True
@@ -274,8 +306,8 @@ class PluginManager:
 
         for module_info in pkgutil.iter_modules(self.search_path):
             if module_info.name.startswith('_'):
-                logger.opt(colors=True).info(
-                    f'<m>忽略了</m> 模块 "<y>{escape_tag(module_info.name)}</y>"'
+                console.info(
+                    f'[magenta]忽略了[/magenta] 模块 "[yellow]{module_info.name}[/yellow]"'
                 )
                 continue
             if (
@@ -325,15 +357,15 @@ class PluginManager:
                     "请确认 `__blueprint__` 变量的值是否正确."
                 )
             self.app.register_blueprint(blueprint)
-            logger.opt(colors=True).success(
-                f'<g>成功加载</g> 插件 "<y>{escape_tag(name)}</y>"'
+            console.success(
+                f'[green]成功加载[/green] 插件 "[yellow]{name}[/yellow]"'
             )
             if (commands := getattr(module, "__commands__", None)) is not None:
                 for command in commands:
                     self.manager.register_command(command)
         except Exception as e:
-            logger.opt(colors=True, exception=e).error(
-                f'<r><bg #f8bbd0>插件 "{escape_tag(name)}" 加载失败！</bg #f8bbd0></r>'
+            console.error(
+                f'[red][on #F8BBD0]插件 "{name}" 加载失败！[/on #F8BBD0][/red]'
             )
             exit(e)
 

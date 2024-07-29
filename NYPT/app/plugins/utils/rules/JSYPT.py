@@ -2,7 +2,7 @@ from typing import List, Tuple, Set
 
 from .types import *
 from .RuleInterface import RuleInterface
-from ....manager import logger
+from ....manager import console
 
 
 class JSYPTRule(RuleInterface):
@@ -53,23 +53,23 @@ class JSYPTRule(RuleInterface):
         """
         if len(question_id_lib_list) > 0:
             temp_question_id_lib_list = list(set(question_id_lib_list) - set(used_question_id_list))
-            logger.opt(colors=True).info(f"<b>当前比赛可用题库为 <y>{temp_question_id_lib_list}</y></b>")
+            console.info(f"[bold]当前比赛可用题库为 [yellow]{temp_question_id_lib_list}[/yellow][/bold]")
             rep_qrecord_set = set([
                 (it.questionID, (TeamType.REPORTER, it.role)) for it in rep_team_record_data_list
             ])
-            logger.opt(colors=True).info(f"<b>repQRecordSet = </b><y>{rep_qrecord_set}</y>")
+            console.info(f"[bold]repQRecordSet = [/bold][yellow]{rep_qrecord_set}[/yellow]")
             opp_qrecord_set = set([
                 (it.questionID, (TeamType.OPPONENT, it.role)) for it in opp_team_record_data_list
             ])
-            logger.opt(colors=True).info(f"<b>oppQRecordSet = </b><y>{opp_qrecord_set}</y>")
+            console.info(f"[bold]oppQRecordSet = [/bold][yellow]{opp_qrecord_set}[/yellow]")
             ban_rule_list = self.ban_rule_list_config
             if round_type == RoundType.SPECIAL:
-                logger.opt(colors=True).info(f"<b>自选题轮次</b>")
-                logger.opt(colors=True).info(f"<b>getOptionalQuestionIDList(tempQuestionIDLibList, repQRecordSet, oppQRecordSet, banRuleList)</b>")
-                logger.opt(colors=True).info(f"<b>tempQuestionIDLibList = </b><y>{temp_question_id_lib_list}</y>")
-                logger.opt(colors=True).info(f"<b>repQRecordSet = </b><y>{rep_qrecord_set}</y>")
-                logger.opt(colors=True).info(f"<b>oppQRecordSet = </b><y>{opp_qrecord_set}</y>")
-                logger.opt(colors=True).info(f"<b>specialBanRuleListConfig = </b><y>{self.special_ban_list_config}</y>")
+                console.info(f"[bold]自选题轮次[/bold]")
+                console.info(f"[bold]getOptionalQuestionIDList(tempQuestionIDLibList, repQRecordSet, oppQRecordSet, banRuleList)[/bold]")
+                console.info(f"[bold]tempQuestionIDLibList = [/bold][yellow]{temp_question_id_lib_list}[/yellow]")
+                console.info(f"[bold]repQRecordSet = [/bold][yellow]{rep_qrecord_set}[/yellow]")
+                console.info(f"[bold]oppQRecordSet = [/bold][yellow]{opp_qrecord_set}[/yellow]")
+                console.info(f"[bold]specialBanRuleListConfig = [/bold][yellow]{self.special_ban_list_config}[/yellow]")
                 return self.getOptionalQuestionIDList(
                     temp_question_id_lib_list,
                     rep_qrecord_set,
@@ -79,12 +79,12 @@ class JSYPTRule(RuleInterface):
             elif round_type == RoundType.NORMAL:
                 optional_question_id_list: List[int] = None
                 while True:
-                    logger.opt(colors=True).info(f"<b>正常题轮次</b>")
-                    logger.opt(colors=True).info(f"<b>getOptionalQuestionIDList(tempQuestionIDLibList, repQRecordSet, oppQRecordSet, banRuleList)</b>")
-                    logger.opt(colors=True).info(f"<b>tempQuestionIDLibList = </b><y>{temp_question_id_lib_list}</y>")
-                    logger.opt(colors=True).info(f"<b>repQRecordSet = </b><y>{rep_qrecord_set}</y>")
-                    logger.opt(colors=True).info(f"<b>oppQRecordSet = </b><y>{opp_qrecord_set}</y>")
-                    logger.opt(colors=True).info(f"<b>banRuleList = </b><y>{ban_rule_list}</y>")
+                    console.info(f"[bold]正常题轮次[/bold]")
+                    console.info(f"[bold]getOptionalQuestionIDList(tempQuestionIDLibList, repQRecordSet, oppQRecordSet, banRuleList)[/bold]")
+                    console.info(f"[bold]tempQuestionIDLibList = [/bold][yellow]{temp_question_id_lib_list}[/yellow]")
+                    console.info(f"[bold]repQRecordSet = [/bold][yellow]{rep_qrecord_set}[/yellow]")
+                    console.info(f"[bold]oppQRecordSet = [/bold][yellow]{opp_qrecord_set}[/yellow]")
+                    console.info(f"[bold]banRuleList = [/bold][yellow]{ban_rule_list}[/yellow]")
                     optional_question_id_list = self.getOptionalQuestionIDList(
                         temp_question_id_lib_list,
                         rep_qrecord_set,
@@ -96,7 +96,7 @@ class JSYPTRule(RuleInterface):
                         break
                 return optional_question_id_list
         else:
-            logger.opt(colors=True).warning(f"<r>不存在赛题，无法进行赛题的禁用与解放</r>")
+            console.warning(f"[red]不存在赛题，无法进行赛题的禁用与解放[/red]")
             return question_id_lib_list
         
     def getOptionalQuestionIDList(
@@ -118,13 +118,13 @@ class JSYPTRule(RuleInterface):
             List[int]: 当前禁选规则下的可选题号列表
         """
         rep_ban_rule_list = [it for it in ban_rule_list if it[0] == TeamType.REPORTER]
-        logger.opt(colors=True).info(f"<b>正方banRuleList = </b><y>{rep_ban_rule_list}</y>")
+        console.info(f"[bold]正方banRuleList = [/bold][yellow]{rep_ban_rule_list}[/yellow]")
         rep_ban_question_id_list = [it[0] for it in rep_qrecord_list if it[1] in rep_ban_rule_list]
-        logger.opt(colors=True).info(f"<b>repBanQuestionIDList = </b><y>{rep_ban_question_id_list}</y>")
+        console.info(f"[bold]repBanQuestionIDList = [/bold][yellow]{rep_ban_question_id_list}[/yellow]")
         opp_ban_rule_list = [it for it in ban_rule_list if it[0] == TeamType.OPPONENT]
-        logger.opt(colors=True).info(f"<b>反方banRuleList = </b><y>{opp_ban_rule_list}</y>")
+        console.info(f"[bold]反方banRuleList = [/bold][yellow]{opp_ban_rule_list}[/yellow]")
         opp_ban_question_id_list = [it[0] for it in opp_qrecord_list if it[1] in opp_ban_rule_list]
-        logger.opt(colors=True).info(f"<b>oppBanQuestionIDList = </b><y>{opp_ban_question_id_list}</y>")
+        console.info(f"[bold]oppBanQuestionIDList = [/bold][yellow]{opp_ban_question_id_list}[/yellow]")
         return list(set(question_id_list) - set(rep_ban_question_id_list) - set(opp_ban_question_id_list))
     
     def get_valid_player_id_list(
@@ -152,7 +152,7 @@ class JSYPTRule(RuleInterface):
         temp_player_data_list: List[PlayerData] = []
         for player_data in _player_data_list:
             player_master_times_in_1_round: int = len([it for it in round_player_record_list if it == player_data.id])
-            logger.opt(colors=True).info(f"<b>playerData = </b><y>{player_data}</y><b>, playerMasterTimesIn1Round = </b><y>{player_master_times_in_1_round}</y>")
+            console.info(f"[bold]playerData = [/bold][yellow]{player_data}[/yellow][bold], playerMasterTimesIn1Round = [/bold][yellow]{player_master_times_in_1_round}[/yellow]")
             if player_master_times_in_1_round < self.player_master_times_in_1_round_config:
                 temp_player_data_list.append(player_data)
         _player_data_list = temp_player_data_list
@@ -160,7 +160,7 @@ class JSYPTRule(RuleInterface):
         temp_player_data_list = []
         for player_data in _player_data_list:
             player_master_times_in_1_match: int = len([it for it in team_record_data_list if it.masterID == player_data.id and it.role in ("R", "O", "V")])
-            logger.opt(colors=True).info(f"<b>playerData = </b><y>{player_data}</y><b>, playerMasterTimesIn1Round = </b><y>{player_master_times_in_1_match}</y>")
+            console.info(f"[bold]playerData = [/bold][yellow]{player_data}[/yellow][bold], playerMasterTimesIn1Round = [/bold][yellow]{player_master_times_in_1_match}[/yellow]")
             if player_master_times_in_1_match < self.player_master_times_in_1_match_config:
                 temp_player_data_list.append(player_data)
         _player_data_list = temp_player_data_list
@@ -168,7 +168,7 @@ class JSYPTRule(RuleInterface):
         temp_player_data_list = []
         for player_data in _player_data_list:
             player_rep_times_in_1_match: int = len([it for it in team_record_data_list if it.masterID == player_data.id and it.role == "R"])
-            logger.opt(colors=True).info(f"<b>playerData = </b><y>{player_data}</y><b>, playerRepTimesIn1Match = </b><y>{player_rep_times_in_1_match}</y>")
+            console.info(f"[bold]playerData = [/bold][yellow]{player_data}[/yellow][bold], playerRepTimesIn1Match = [/bold][yellow]{player_rep_times_in_1_match}[/yellow]")
             if player_rep_times_in_1_match < self.player_rep_times_in_1_match_config:
                 temp_player_data_list.append(player_data)
         _player_data_list = temp_player_data_list
@@ -199,7 +199,7 @@ class JSYPTRule(RuleInterface):
                 max_score = sorted_score_list[-1]
                 return (float(sum(sorted_score_list)) - float(min_score + max_score)) / float(len(sorted_score_list) - 1)
             case _:
-                logger.opt(colors=True).warning("<y>暂未提供其他裁判数下的统分规则，默认采用平均分机制</y>")
+                console.warning("[yellow]暂未提供其他裁判数下的统分规则，默认采用平均分机制[/yellow]")
                 return float(sum(score_list)) / float(len(score_list))
             
     def get_rep_score_weight(self, team_record_data_list: List[RecordData], is_refuse: bool) -> float:

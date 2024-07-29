@@ -3,7 +3,7 @@ from rich.table import Table
 
 from typing import List
 from . import interface, next_room_id, Index
-from ...manager import CommandInterface, logger, console
+from ...manager import CommandInterface, console, console
 
 
 class CreateRoom(CommandInterface):
@@ -31,7 +31,7 @@ class CreateRoom(CommandInterface):
             ROOMID=room_id,
             TOKEN=b64encode(password.encode('utf-8')).decode('utf-8')
         )
-        logger.opt(colors=True).info(f"<g>新会场创建成功！ <b>id</b> 为 <y>{room_id}</y>(当前总会场数)</g>")
+        console.info(f"[green]新会场创建成功！ [bold]id[/bold] 为 [yellow]{room_id}[/yellow](当前总会场数)[/green]")
         return True
     
 
@@ -54,14 +54,14 @@ class RemoveRoom(CommandInterface):
         room_id: int = int(args[0])
         query_room = interface.select_first("ROOMS", where={"ROOMID": ("==", room_id)})
         if query_room is None:
-            logger.opt(colors=True).error(f"<r>会场 id=<y>{room_id}</y> 不存在！</r>")
+            console.error(f"[red]会场 id=[yellow]{room_id}[/yellow] 不存在！[/red]")
             return True
-        logger.opt(colors=True).info(f"<g>正在删除会场 id=<y>{room_id}</y> ...</g>")
+        console.info(f"[green]正在删除会场 id=[yellow]{room_id}[/yellow] ...[/green]")
         room_total = next_room_id()
         interface.delete("ROOMS", where={"ROOMID": ("==", room_id)})
         for i in range(room_id + 1, room_total):
             interface.update("ROOMS", where={"ROOMID": ("==", i)}, ROOMID=i-1)
-        logger.opt(colors=True).info(f"<g>会场 id=<y>{room_id}</y> 删除成功！</g>")
+        console.info(f"[green]会场 id=[yellow]{room_id}[/yellow] 删除成功！[/green]")
         return True
     
 
@@ -89,10 +89,10 @@ class SetRoompass(CommandInterface):
             password = args[1].split("-pwd=")[1]
         query_room = interface.select_first("ROOMS", where={"ROOMID": ("==", room_id)})
         if query_room is None:
-            logger.opt(colors=True).error(f"<r>会场 id=<y>{room_id}</y> 不存在！</r>")
+            console.error(f"[red]会场 id=[yellow]{room_id}[/yellow] 不存在！[/red]")
             return True
         interface.update("ROOMS", where={"ROOMID": ("==", room_id)}, TOKEN=b64encode(password.encode('utf-8')).decode('utf-8'))
-        logger.opt(colors=True).info(f"<g>会场 id=<y>{room_id}</y> 密码设置成功！</g>")
+        console.info(f"[green]会场 id=[yellow]{room_id}[/yellow] 密码设置成功！[/green]")
         return True
     
 
