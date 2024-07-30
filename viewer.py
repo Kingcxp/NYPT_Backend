@@ -8,7 +8,7 @@ from io import StringIO
 from threading import Thread
 from textual.app import App, ComposeResult, on
 from textual.binding import Binding, BindingType
-from textual.widgets import Header, Footer, Label, Input
+from textual.widgets import Header, Footer, RichLog, Input
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from rich.text import Text
 from typing import ClassVar, List
@@ -22,25 +22,28 @@ def parse_rich(text: str) -> Text:
 
 
 class RichOutput(StringIO):
-    def __init__(self, rich_log: Label, scroll: VerticalScroll) -> None:
+    def __init__(self, rich_log: RichLog) -> None:
         super().__init__()
         self.rich_log = rich_log
-        self.scroll = scroll
 
     def write(self, s: str) -> None:
         super().write(s)
-        is_maximum: bool = self.scroll.is_vertical_scroll_end
-        self.rich_log.update(parse_rich(self.getvalue()))
+        is_maximum: bool = self.rich_log.is_vertical_scroll_end
+        self.rich_log.write(parse_rich(s))
         if is_maximum:
-            self.scroll.scroll_end(animate=False)
+            self.rich_log.scroll_end(animate=False)
 
 
 class MainApp(App):
 
     TITLE: str = "NYPT Backend"
-    DEFAULT_CSS = \
-    """
-    VerticalScroll { border: solid white; }
+    DEFAULT_CSS = """
+    RichLog {
+        border: round white;
+    }
+    RichLog:focus {
+        border: round $accent;
+    }
     """
     BINDINGS: ClassVar[List[BindingType]] = [
         Binding("escape", "quit", "Quit App"),
@@ -49,23 +52,19 @@ class MainApp(App):
 
     def compose(self) -> ComposeResult:
         self.input = Input(value="> ", id="main-input")
-        self.log_left = Label(id="main-log-left")
-        self.log_right = Label(id="main-log-right")
-        self.scroll_left = VerticalScroll(self.log_left)
-        self.scroll_right = VerticalScroll(self.log_right)
+        self.log_left = RichLog(id="main-log-left", wrap=True)
+        self.log_right = RichLog(id="main-log-right", wrap=True)
         yield Header()
         yield Vertical(
             Horizontal(
-                self.scroll_left,
-                self.scroll_right
+                self.log_left,
+                self.log_right
             ),
             self.input
         )
         yield Footer()
 
     def update(self) -> None:
-        self.input.focus()
-        
         if self.input.cursor_position < 2:
             self.input.cursor_position = 2
 
@@ -74,8 +73,8 @@ class MainApp(App):
         self.original_stderr = sys.stderr
         self.original_stdin = sys.stdin
 
-        self.stdout = RichOutput(self.log_left, self.scroll_left)
-        self.stderr = RichOutput(self.log_right, self.scroll_right)
+        self.stdout = RichOutput(self.log_left)
+        self.stderr = RichOutput(self.log_right)
         self.stdin = StringIO()
 
         sys.stdout = self.stdout
@@ -86,6 +85,8 @@ class MainApp(App):
         
         self.process = Thread(target=main)
         self.process.start()
+
+        self.input.focus()
 
     def action_quit(self) -> None:
         self.stdin.write("exit\n")
@@ -120,7 +121,7 @@ class MainApp(App):
 
         if command == "clear":
             self.stderr.truncate(0)
-            self.log_right.update("")
+            self.log_right.clear()
             return
 
         self.stdin.truncate(0)
