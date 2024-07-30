@@ -122,23 +122,38 @@ Vue项目初始化导引：[菜鸟教程](https://www.runoob.com/vue3/vue3-insta
 对项目内容进行修改编写时，应当首先拉取更新远程仓库的master分支到本地master分支。  
 随后将master分支合并到自己的分支，并对负责的内容进行编写，编写完成后，在指定的文件中填写好自己的更新日志，大致描述这次更新完成了什么内容。
 依照上述Git流程完成本次更新的提交。
+为了便于整理和查找，我们对 git 提交的规范也有一定的要求：
+```sh
+feat: 新增功能
+fix: 修复bug
+docs: 文档更新
+style: 代码格式（不影响代码运行的变动）
+refactor: 重构（即不是新增功能，也不是修改bug的代码变动）
+perf: 性能优化
+test: 增加测试
+chore: 构建过程或辅助工具的变动
+revert: 回滚到上一个版本
+build: 构建系统升级
+ci: 变更持续集成配置
+```
 
 ## Flask项目结构及编写规范
 根据研究，我们将Flask项目结构参照Nonebot机器人项目结构重新编排，组成了如下的插件式项目结构：
 
 ```sh
 |-- Flask
-    |-- app
-    |   |-- plugins
-    |   |   |-- example_plugin1
-    |   |   |   |-- __init__.py
-    |   |   |   |-- example_plugin1.py
-    |   |   |-- example_plugin2
-    |   |       |-- __init__.py
-    |   |       |-- example_plugin2.py
-    |   |-- __init__.py
-    |   |-- manager.py
-    |-- launcher.py
+|   |-- app
+|   |   |-- plugins
+|   |   |   |-- example_plugin1
+|   |   |   |   |-- __init__.py
+|   |   |   |   |-- example_plugin1.py
+|   |   |   |-- example_plugin2
+|   |   |       |-- __init__.py
+|   |   |       |-- example_plugin2.py
+|   |   |-- __init__.py
+|   |   |-- manager.py
+|   |-- launcher.py
+|-- viewer.py
 ```
 
 ### Flask插件编写方式
