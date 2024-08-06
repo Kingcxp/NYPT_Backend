@@ -142,3 +142,42 @@ async def roomdata() -> Tuple[Dict[str, Any], int]:
             "rule": Config.rule,
             "match_type": Config.match_type
         }, 200
+
+
+@main.route("/assist/upload", methods=["POST"])
+def upload():
+    """上传指定会场的数据
+    
+    POST 表单信息:
+    {
+        "roomID": int(会场编号)
+        "round": int(比赛轮次)
+        "token": str(会场令牌)
+        "roomdata": dict(会场数据)
+    }
+
+    Returns:
+        Tuple[Dict[str, Any], int]: 成功返回 200(OK)，失败返回 400(Bad Request) 或者 404(Not Found) 或者 500(Internal Server Error)
+    """
+    room_id: int = int(request.json["roomID"])
+    round_id: int = int(request.json["round"])
+    token: str = request.json["token"]
+    new_data: Dict[str, Any] = request.json["roomdata"]
+
+    try_fetch = interface.select_first("ROOMS", where={"ROOMID": ("==", room_id)})
+    if try_fetch is None:
+        warn("POST", "/assist/roomdata", "会场 ID 不存在！")
+        return {
+            "msg": "会场 ID 不存在！"
+        }, 404
+    fetch_result = try_fetch[Index.TOKEN.value]
+    if fetch_result != token:
+        warn("POST", "/assist/roomdata", "会场密钥不匹配！")
+        return {
+            "msg": "会场令牌不匹配！"
+        }, 400
+    
+    if Config.mode == WorkMode.OFFLINE:
+        pass
+    else:
+        pass
