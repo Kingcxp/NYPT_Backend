@@ -3,6 +3,7 @@ import struct
 import asyncio
 import aiofiles
 
+from datetime import datetime
 from json import dumps, loads
 from typing import Tuple, Dict, Any, Optional
 from flask import request
@@ -99,10 +100,11 @@ async def roomdata() -> Tuple[Dict[str, Any], int]:
         }, 400
     
     if Config.mode == WorkMode.OFFLINE:
-        file_path = \
-            Config.main_folder + \
-            Config.round_folder_name.format(id=round_id) + \
+        file_path = os.path.join(
+            Config.main_folder,
+            Config.round_folder_name.format(id=round_id),
             Config.room_file_name.format(id=room_id)
+        )
         if not os.path.exists(file_path):
             warn("POST", "/assist/roomdata", f"[OFFLINE]: [blue]{file_path}[/blue] 未找到！")
             return {
@@ -145,7 +147,7 @@ async def roomdata() -> Tuple[Dict[str, Any], int]:
 
 
 @main.route("/assist/upload", methods=["POST"])
-def upload():
+async def upload():
     """上传指定会场的数据
     
     POST 表单信息:
@@ -166,18 +168,47 @@ def upload():
 
     try_fetch = interface.select_first("ROOMS", where={"ROOMID": ("==", room_id)})
     if try_fetch is None:
-        warn("POST", "/assist/roomdata", "会场 ID 不存在！")
+        warn("POST", "/assist/upload", "会场 ID 不存在！")
         return {
             "msg": "会场 ID 不存在！"
         }, 404
     fetch_result = try_fetch[Index.TOKEN.value]
     if fetch_result != token:
-        warn("POST", "/assist/roomdata", "会场密钥不匹配！")
+        warn("POST", "/assist/upload", "会场密钥不匹配！")
         return {
             "msg": "会场令牌不匹配！"
         }, 400
-    
+
     if Config.mode == WorkMode.OFFLINE:
-        pass
+        file_path = os.path.join(
+            Config.temp_folder,
+            Config.temp_file_name.format(
+                room_id=room_id,
+                round_id=round_id,
+                time_stamp=datetime.now().strftime(r"%Y-%m-%d-%H-%M-%S-%f")
+            )
+        )
+        try:
+            async with aiofiles.open(file_path, "w", encoding="utf-8") as file:
+                await file.write(dumps(new_data))
+            suc("POST", "/assist/upload", f"[OFFLINE]: [blue]{file_path}[/blue] 保存成功！")
+            return {}, 200
+        except Exception as e:
+            print(e)
+            err("POST", "/assist/upload", f"[OFFLINE]: [blue]{file_path}[/blue] 保存失败！")
+            return {
+                "msg": "本地数据保存失败！"
+            }, 500
     else:
-        pass
+        data = request_data({
+            "roomID": room_id,
+            "round": round_id,
+            "data": new_data
+        })
+        if data is None:
+            err("POST", "/assist/upload", "[ONLINE]: 向服务端发送请求失败！请检查配置或网络连接！")
+            return {
+                "msg": "服务端网络或配置异常！无法连接到 PTAssist 服务端！"
+            }, 500
+        suc("POST", "/assist/upload", "[ONLINE]: 服务器数据上传成功！")
+        return {}, 200
