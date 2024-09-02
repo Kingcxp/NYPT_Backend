@@ -84,7 +84,7 @@ async def roomdata() -> Tuple[Dict[str, Any], int]:
     """
     room_id: int = int(request.json["roomID"])
     round_id: int = int(request.json["round"])
-    token: str = request.json["token"]
+    token: str = request.json.get("token")
 
     try_fetch = interface.select_first("ROOMS", where={"ROOMID": ("==", room_id)})
     if try_fetch is None:
@@ -93,7 +93,7 @@ async def roomdata() -> Tuple[Dict[str, Any], int]:
             "msg": "会场 ID 不存在！"
         }, 404
     fetch_result = try_fetch[Index.TOKEN.value]
-    if fetch_result != token:
+    if token is not None and fetch_result != token:
         warn("POST", "/assist/roomdata", "会场密钥不匹配！")
         return {
             "msg": "会场令牌不匹配！"
