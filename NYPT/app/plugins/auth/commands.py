@@ -1,11 +1,13 @@
 import os
 import xlwt
+import tkinter as tk
 
 from base64 import b64encode, b64decode
 from typing import List, Any, Union, Optional
 from random import randint
 from functools import reduce
 from rich.table import Table
+from tkinter import filedialog
 
 from . import interface, next_uid, Index, next_team, next_volunteer, str_decode
 from .config import Config
@@ -27,6 +29,21 @@ def generate_password(length: int, keyring: str = "1234567890qwertyuiopasdfghjkl
         lambda x, y: x + y,
         [keyring[randint(0, len(keyring) - 1)] for _ in range(length)]
     )
+
+
+def img_encode(src: str) -> str:
+    with open(src, "rb") as img:
+        img_base64 = b64encode(img.read())
+    img_type = "error"
+    if src.endswith("png"):
+        img_type = "png"
+    if src.endswith("jpg") or src.endswith("jpeg"):
+        img_type = "jpeg"
+        
+    if img_type == "error":
+        raise TypeError("图片格式不支持！")
+
+    return f"data:image/{img_type};base64," + img_base64.decode()
 
 
 class NewUser(CommandInterface):
@@ -387,6 +404,48 @@ class SetName(CommandInterface):
         console.info(f"[green]正在为 {value_name}=[yellow]{value}[/yellow] 的用户更改 name ...[/green]")
         interface.update("USER", where={key: ("==", value)}, NAME=args[1])
         console.info(f"[green]为 {value_name}=[yellow]{value}[/yellow] 的用户更改 name 成功！[/green]")
+        return True
+    
+
+class SetAward(CommandInterface):
+    @property
+    def command(self) -> str:
+        return "set-award"
+    
+    @property
+    def description(self) -> str:
+        return "为用户设置奖项图片"
+    
+    @property
+    def usage(self) -> str:
+        return "set-award -id=<uid> 或者 set-award -realname=<realname> 或者 set-award -email=<email>"
+    
+    def execute(self, args: List[str]) -> bool:
+        if len(args) != 1:
+            return False
+        key: str = ""
+        value: Union[str, int] = ""
+        value_name: str = ""
+        if args[0].startswith("-id="):
+            key, value, value_name = "UID", int(args[0].split("-id=")[1]), "id"
+        elif args[0].startswith("-realname="):
+            key, value, value_name = "REALNAME", args[0].split("-realname=")[1], "realname"
+        elif args[0].startswith("-email="):
+            key, value, value_name = "EMAIL", args[0].split("-email=")[1], "email"
+        else:
+            return False
+        query_user = interface.select_first("USER", where={key: ("==", value)})
+        if query_user is None:
+            console.info(f"[red]为 {value_name}=[yellow]{value}[/yellow] 的用户添加奖项失败：用户不存在！[/red]")
+            return True
+        console.info(f"[green]正在为 {value_name}=[yellow]{value}[/yellow] 的用户添加奖项...[/green]")
+
+        root = tk.Tk()
+        root.withdraw()
+        filepath = filedialog.askopenfilename()
+        interface.update("USER", where={key: ("==", value)}, AWARD=img_encode(filepath))
+
+        console.info(f"[green]为 {value_name}=[yellow]{value}[/yellow] 的用户添加奖项成功！[/green]")
         return True
     
 

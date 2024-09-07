@@ -206,6 +206,7 @@ __commands__ = [
     ShowPassword(),
     SetRealname(),
     SetName(),
+    SetAward(),
     ListRequests(),
     AcceptRequest(),
     RejectRequest(),

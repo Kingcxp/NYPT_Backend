@@ -286,7 +286,7 @@ async def fetch_userdata(which: str) -> Tuple[Dict[str, Any], int]:
     leader:     LEADER
     member:     MEMBER
     award:      AWARD
-    all: 除 TOKEN 和 AWARD 外全部字段
+    all:        除 TOKEN 和 AWARD 外全部字段
 
     Returns:
         Tuple[Dict[str, Any], int]: 成功返回用户信息及状态码 200(OK)，否则返回 400(Bad Request) 或 404(Not Found) 或 500(Internal Server Error)，视情况而定
