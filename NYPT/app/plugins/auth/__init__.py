@@ -213,7 +213,8 @@ __commands__ = [
     UserInfo(),
     ListTeams(),
     ListVolunteers(),
-    ListAll()
+    ListAll(),
+    ExportConfig(),
 ]
 
 
