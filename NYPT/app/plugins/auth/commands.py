@@ -3,7 +3,7 @@ import xlwt
 import tkinter as tk
 
 from base64 import b64encode, b64decode
-from typing import List, Any, Union, Optional
+from typing import List, Dict, Any, Union, Optional
 from random import randint
 from functools import reduce
 from rich.table import Table
@@ -785,18 +785,20 @@ class ExportConfig(CommandInterface):
         index = -1
         for header in Config.team_info_headers:
             index += 1
-            sheet_team.write(0, index, header.name)
+            sheet_team.write(0, index, header)
         index = 0
         for team in team_infos:
             index += 1
-            members: List[str] = team[Index.MEMBER.value].split(' | ')
             sheet_team.write(index, 0, team[Index.SCHOOL.value])
             sheet_team.write(index, 1, team[Index.REALNAME.value])
             # TODO ? 抽签号 ?
             sheet_team.write(index, 2, str(index))
-            for i in range(len(members)):
-                sheet_team.write(index, 3 + i * 2, f"{i + 1}号选手")
-                sheet_team.write(index, 4 + i * 2, str_decode(members[i])["gender"])
+            members: List[Dict[str, str]] = str_decode(team[Index.MEMBER.value])
+            i = 0
+            for member in members:
+                i += 1
+                sheet_team.write(index, 1 + i * 2, f"{i}号选手")
+                sheet_team.write(index, 2 + i * 2, member["gender"])
 
         #? 裁判信息
         # TODO 无法生成？
@@ -812,8 +814,8 @@ class ExportConfig(CommandInterface):
         index = 0
         for team in team_infos:
             index += 1
-            sheet_team.write(index, 0, team[Index.SCHOOL.value])
-            sheet_team.write(index, 1, team[Index.REALNAME.value])
+            sheet_problem_set.write(index, 0, team[Index.SCHOOL.value])
+            sheet_problem_set.write(index, 1, team[Index.REALNAME.value])
         
         workbook.save(os.path.dirname(os.path.abspath(__file__)) + "/server_config.xlsx")
         console.info(f"[green]配置文件导出成功！[/green]")

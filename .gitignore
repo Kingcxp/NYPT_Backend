@@ -9,3 +9,6 @@ flask_session/
 
 # Test data should not leak
 match/
+
+# Generated server config
+server_config.xlsx
