@@ -157,6 +157,7 @@ class CommandManager:
             console.error(
                 f'"[yellow]{command}[/yellow]" : [red]未找到[/red] 命令！'
             )
+            sys.stdout = original_stdout
             return
         try:
             execute_result = executor(args)
@@ -170,6 +171,7 @@ class CommandManager:
                 console.print(f'命令名称: "{command}"')
                 console.print(f'命令简介: {self.commands_descriptions_and_usages[command][0]}')
                 console.print(f'命令用法: {self.commands_descriptions_and_usages[command][1]}')
+                sys.stdout = original_stdout
                 return
         except:
             print_exc()
