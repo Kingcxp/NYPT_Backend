@@ -1,0 +1,17 @@
+__pycache__/
+.idea/
+.vscode/
+flask_session/
+
+# All data should not be tracked
+*.sqlite
+*.db
+
+# Test data should not leak
+match/
+
+# Generated server config
+server_config.xlsx
+
+# Virtual environment
+serverenv/
