@@ -15,3 +15,6 @@ server_config.xlsx
 
 # Virtual environment
 serverenv/
+
+# Dotenv file
+.env

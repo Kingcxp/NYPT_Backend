@@ -152,11 +152,12 @@ class PluginManager:
             console.log(
                 f'[green]成功加载[/green] 插件 "[yellow]{name}[/yellow]"'
             )
-        except Exception as e:
+        except Exception:
             console.log(
                 f'[red][on #F8BBD0]插件 "{name}" 加载失败！[/on #F8BBD0][/red]'
             )
-            exit(e)
+            console.print_exception(show_locals=True)
+            exit()
 
     def load_all_plugins(self):
         for name in self.available_plugins:
