@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 
 router = APIRouter(
-    prefix="/sysinfo",
-    tags=["sysinfo"],
+    prefix="/notice",
+    tags=["notice"],
 )
 __router__ = router

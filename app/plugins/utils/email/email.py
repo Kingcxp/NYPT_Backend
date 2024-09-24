@@ -10,7 +10,7 @@ from email.utils import formataddr
 from ....manager import console
 
 
-async def async_send_mail(target: str, sender_name: str, title: str, msg: str) -> bool:
+async def send_mail_async(target: str, sender_name: str, title: str, msg: str) -> bool:
     """异步发送纯文本邮件
 
     Args:
