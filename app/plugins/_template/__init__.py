@@ -6,3 +6,6 @@ router = APIRouter(
     tags=["template"],
 )
 __router__ = router
+
+
+from . import template

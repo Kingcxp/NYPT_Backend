@@ -6,3 +6,6 @@ router = APIRouter(
     tags=["sysinfo"],
 )
 __router__ = router
+
+
+from . import sysinfo

@@ -1,11 +1,7 @@
 from fastapi import APIRouter
 
-
 router = APIRouter(
-    prefix="/notice",
-    tags=["notice"],
+    prefix="/auth",
+    tags=["auth"],
 )
 __router__ = router
-
-
-from . import notice
