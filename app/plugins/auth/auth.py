@@ -10,6 +10,7 @@ from random import randint
 from functools import reduce
 
 from . import router
+from .config import Config
 from .database import *
 from ..utils.email import send_mail
 
@@ -49,7 +50,7 @@ async def verify_email(item: VerifyItem, request: Request) -> JSONResponse:
         }, status_code=status.HTTP_400_BAD_REQUEST)
     if await send_mail(
         target=item.email, sender_name="NYPT",
-        title="NYPT 验证码", msg="" % captcha
+        title="NYPT 验证码", msg=Config.verify_msg % captcha
     ):
         request.session["captcha"] = captcha
         request.session["last_captcha_time"] = time.time()
