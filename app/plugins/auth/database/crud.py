@@ -1,8 +1,9 @@
 import hashlib
 
 from base64 import b64encode
-from typing import Optional, List, Dict
-from sqlalchemy.orm import Session
+from typing import Iterable, List, Dict, Optional
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import models, schemas
 
@@ -63,44 +64,51 @@ def str_decode(members_str: str) -> List[Dict[str, str]]:
     return [from_str(member) for member in members]
 
 
-def get_user(db: Session, user_id: int) -> Optional[models.User]:
+async def get_user(db: AsyncSession, user_id: int) -> Optional[models.User]:
     """
     通过用户名 id 获取用户信息
     """
-    return db.query(models.User).filter(
-        models.User.uid == user_id
-    ).first()
+    return (await db.execute(select(models.User).where(models.User.uid == user_id))).scalars().first()
 
 
-def get_user_by_name(db: Session, name: str) -> Optional[models.User]:
+async def get_user_by_name(db: AsyncSession, name: str) -> Optional[models.User]:
     """
     通过用户名获取用户信息
     """
-    return db.query(models.User).filter(
-        models.User.name == name
-    ).first()
+    return (await db.execute(select(models.User).where(models.User.name == name))).scalars().first()
 
-def get_last_user(db: Session) -> Optional[models.User]:
+async def get_last_user(db: AsyncSession) -> Optional[models.User]:
     """
     获取编号最大的那个用户信息
     """
-    return db.query(models.User).order_by(models.User.uid.desc()).first()
+    return (await db.execute(select(models.User).order_by(models.User.uid.desc()))).scalars().first()
 
 
-def get_all_users(db: Session, skip: int = 0, limit: int = 25565) -> List[models.User]:
+async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 25565) -> Iterable[models.User]:
     """
     获取所有的用户信息
     """
-    return db.query(models.User).offset(skip).limit(limit).all()
+    return (await db.execute(select(models.User).offset(skip).limit(limit))).scalars().all()
 
 
-def create_user(db: Session, user: schemas.UserCreate) -> models.User:
+async def create_user(db: AsyncSession, user: schemas.UserCreate) -> models.User:
     """
     创建一个用户信息，提供的密码会自动加密
     """
     user.token = b64encode(user.token.encode('utf-8')).decode('utf-8')
     new_user = models.User(**user.model_dump())
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await db.commit()
+    await db.refresh(new_user)
     return new_user
+
+
+async def update_teaminfo(db: AsyncSession, user_id: int, leaders: str, members: str, contact: str) -> None:
+    """
+    更新用户团队信息
+    """
+    await db.execute(update(models.User).where(models.User.uid == user_id).values({
+        models.User.leaders: leaders,
+        models.User.members: members,
+        models.User.contact: contact
+    }))

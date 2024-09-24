@@ -9,10 +9,8 @@ from . import router
 
 @router.get("/total")
 async def notice_total() -> PlainTextResponse:
-    """获取公告总数
-
-    Returns:
-        PlainTextResponse: 转为字符串的数字，表示一共有多少个公告，状态码: 200 OK
+    """
+    获取公告总数
     """
     tot: int = 0
     for i in range(0, 100):
@@ -34,9 +32,6 @@ async def notice(page: int) -> PlainTextResponse:
 
     Args:
         page (int): 公告编号
-
-    Returns:
-        PlainTextResponse: 公告内容，状态码: 200 OK 或 404 Not Found(未找到公告)
     """
     page_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),

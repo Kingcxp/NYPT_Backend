@@ -1,9 +1,9 @@
 from sqlalchemy import Column, String, Integer
 
-from ...utils.database import Base
+from . import database
 
 
-class User(Base):
+class User(database.Base):
     """
     表: users
 

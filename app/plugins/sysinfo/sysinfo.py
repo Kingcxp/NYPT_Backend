@@ -8,6 +8,9 @@ from . import router
 
 @router.get("/")
 def sysinfo() -> JSONResponse:
+    """
+    返回服务器的系统信息
+    """
     cpu_usage: float = psutil.cpu_percent()
     cpu_cores: int = psutil.cpu_count()
     cpu_freq: psutil.scpufreq = psutil.cpu_freq()

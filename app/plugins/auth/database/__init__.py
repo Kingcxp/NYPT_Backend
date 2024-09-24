@@ -1,12 +1,12 @@
 import os
 
-from typing import Generator
-from sqlalchemy.orm import Session
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...utils.database import DatabaseAsync
+from ...utils.database import Database
 
 
-database = DatabaseAsync(
+database: Database = Database(
     "sqlite+aiosqlite:///",
     os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
@@ -14,9 +14,11 @@ database = DatabaseAsync(
     )
 )
 
-def get_db() -> Generator[Session]:
-    db = database.Session()
-    try:
+async def get_db() -> AsyncGenerator[AsyncSession]:
+    async with database.Session() as db:
         yield db
-    finally:
-        db.close()
+
+
+from .models import *
+from .schemas import *
+from .crud import *
