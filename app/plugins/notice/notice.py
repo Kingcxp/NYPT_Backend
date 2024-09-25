@@ -13,11 +13,11 @@ async def notice_total() -> PlainTextResponse:
     获取公告总数
     """
     tot: int = 0
-    for i in range(0, 100):
+    for i in range(1, 100):
         if not os.path.exists(
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                f"notice{i}.html"
+                f"notices/notice{i}.html"
             )
         ):
             break
@@ -35,7 +35,7 @@ async def notice(page: int) -> PlainTextResponse:
     """
     page_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        f"notice{page}.html"
+        f"notices/notice{page}.html"
     )
     if not os.path.exists(page_path):
         return PlainTextResponse(

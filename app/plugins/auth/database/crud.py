@@ -1,9 +1,11 @@
 import hashlib
 
+from random import randint
 from base64 import b64encode
-from typing import Iterable, List, Dict, Optional
-from sqlalchemy import select, update
+from functools import reduce
+from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Iterable, List, Dict, Optional
 
 from . import models, schemas
 
@@ -64,11 +66,27 @@ def str_decode(members_str: str) -> List[Dict[str, str]]:
     return [from_str(member) for member in members]
 
 
+def generate_password(length: int, keyring: str = "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM") -> str:
+    """生成指定长度的密码
+
+    Args:
+        length (int): 密码长度
+        keyring (str, optional): 密码字符的所有备选项.
+
+    Returns:
+        str: 生成的密码
+    """
+    return reduce(
+        lambda x, y: x + y,
+        [keyring[randint(0, len(keyring) - 1)] for _ in range(length)]
+    )
+
+
 async def get_user(db: AsyncSession, user_id: int) -> Optional[models.User]:
     """
     通过用户名 id 获取用户信息
     """
-    return (await db.execute(select(models.User).where(models.User.uid == user_id))).scalars().first()
+    return (await db.execute(select(models.User).where(models.User.user_id == user_id))).scalars().first()
 
 
 async def get_user_by_name(db: AsyncSession, name: str) -> Optional[models.User]:
@@ -77,11 +95,19 @@ async def get_user_by_name(db: AsyncSession, name: str) -> Optional[models.User]
     """
     return (await db.execute(select(models.User).where(models.User.name == name))).scalars().first()
 
+
+async def get_user_by_identity(db: AsyncSession, identity: str) -> Optional[models.User]:
+    """
+    获取第一个身份为 identity 的用户（用来查找是否存在指定身份的用户）
+    """
+    return (await db.execute(select(models.User).where(models.User.identity == identity))).scalars().first()
+
+
 async def get_last_user(db: AsyncSession) -> Optional[models.User]:
     """
     获取编号最大的那个用户信息
     """
-    return (await db.execute(select(models.User).order_by(models.User.uid.desc()))).scalars().first()
+    return (await db.execute(select(models.User).order_by(models.User.user_id.desc()))).scalars().first()
 
 
 async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 25565) -> Iterable[models.User]:
@@ -91,10 +117,12 @@ async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 25565) -> 
     return (await db.execute(select(models.User).offset(skip).limit(limit))).scalars().all()
 
 
-async def create_user(db: AsyncSession, user: schemas.UserCreate) -> models.User:
+async def create_user(db: AsyncSession, user: schemas.UserCreate) -> Optional[models.User]:
     """
-    创建一个用户信息，提供的密码会自动加密
+    创建一个用户信息，提供的密码会自动加密，如果无法创建，返回错误信息
     """
+    if await get_user_by_name(db, user.name):
+        return None
     user.token = b64encode(user.token.encode('utf-8')).decode('utf-8')
     new_user = models.User(**user.model_dump())
     db.add(new_user)
@@ -103,11 +131,34 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate) -> models.User
     return new_user
 
 
+async def delete_user(db: AsyncSession, user_id: int) -> bool:
+    """
+    删除一个用户信息，返回是否成功
+    """
+    if user := await get_user(db, user_id):
+        return False
+    await db.delete(user)
+    await db.flush()
+    return True
+
+
+async def update_user(db: AsyncSession, user: schemas.User) -> bool:
+    """
+    更新一个用户信息，返回是否成功
+    """
+    if await get_user(db, user.user_id):
+        return False
+    await db.execute(update(models.User).where(models.User.user_id == user.user_id).values({
+        models.User.__dict__[key]: value for key, value in user.model_dump().items() if key != 'user_id'
+    }))
+    return True
+
+
 async def update_teaminfo(db: AsyncSession, user_id: int, leaders: str, members: str, contact: str) -> None:
     """
     更新用户团队信息
     """
-    await db.execute(update(models.User).where(models.User.uid == user_id).values({
+    await db.execute(update(models.User).where(models.User.user_id == user_id).values({
         models.User.leaders: leaders,
         models.User.members: members,
         models.User.contact: contact

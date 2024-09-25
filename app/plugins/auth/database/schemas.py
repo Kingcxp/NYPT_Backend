@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -8,6 +9,7 @@ class UserBase(BaseModel):
     name: str
     identity: str
     token: str
+    email: Optional[str]
 
 
 class UserCreate(UserBase):
@@ -18,12 +20,11 @@ class UserCreate(UserBase):
 
 
 class User(UserBase):
-    uid: int
-    email: str
-    contact: str
-    leaders: str
-    members: str
-    award: str
+    user_id: int
+    contact: Optional[str]
+    leaders: Optional[str]
+    members: Optional[str]
+    award: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True

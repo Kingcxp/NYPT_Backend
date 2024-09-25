@@ -14,7 +14,7 @@ database: Database = Database(
     )
 )
 
-async def get_db() -> AsyncGenerator[AsyncSession]:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with database.Session() as db:
         yield db
 

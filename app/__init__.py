@@ -2,10 +2,11 @@ import os
 import secrets
 
 from fastapi import FastAPI
+from dotenv import load_dotenv, find_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from .manager import load_all_routers
+from .manager import load_all_routers, console
 
 
 def create_app():
@@ -45,3 +46,5 @@ def create_app():
 
 
 app = create_app()
+if load_dotenv(find_dotenv(), verbose=True):
+    console.log("[green]成功加载[/green] [yellow].env[/yellow] [blue]文件！[/blue]")

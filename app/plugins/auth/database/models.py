@@ -8,7 +8,7 @@ class User(database.Base):
     表: users
 
     字段：
-        uid: 用户唯一标识
+        user_id: 用户唯一标识
         name: 用户名，由后台确定，用户无法更改，登录标识，必须保证唯一，为避免输入麻烦尽量不使用中文
         email: 联系人邮箱，唯一标识
         token: 用户密码(base64编码)
@@ -20,7 +20,7 @@ class User(database.Base):
     """
     __tablename__ = "users"
 
-    uid = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(128), unique=True)
     email = Column(String(256), unique=True)
     token = Column(String(1024))

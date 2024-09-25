@@ -97,7 +97,7 @@ class PluginManager:
 
         for module_info in pkgutil.iter_modules(self.search_path):
             if module_info.name.startswith('_'):
-                console.info(
+                console.log(
                     f'[magenta]忽略了[/magenta] 模块 "[yellow]{module_info.name}[/yellow]"'
                 )
                 continue
@@ -123,7 +123,7 @@ class PluginManager:
 
         return self.available_plugins
 
-    def load_plugin(self, name: str) -> str:
+    def load_plugin(self, name: str) -> Optional[str]:
         """
         load the plugin decided by name.
 

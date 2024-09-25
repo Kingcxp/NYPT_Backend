@@ -1,17 +1,18 @@
 import time
 
 from math import ceil
+from base64 import b64decode
 from pydantic import BaseModel
 from fastapi import Request, Depends, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Optional, List
+from typing import Dict, List
 from random import randint
 from functools import reduce
 
 from . import router
 from .config import Config
-from .database import *
+from .database import get_db, crud, schemas
 from ..utils.email import send_mail
 
 
@@ -20,14 +21,14 @@ async def require_id(request: Request) -> JSONResponse:
     """
     返回 session 中存储的用户标识
     """
-    uid = request.session.get("user_id")
-    if uid is not None:
+    user_id = request.session.get("user_id")
+    if user_id is not None:
         return JSONResponse(content={
-            "user_id": uid
+            "user_id": user_id
         }, status_code=status.HTTP_200_OK)
     return JSONResponse(content={
         "msg": "您尚未登录！"
-    }, status_code=status.HTTP_200_OK)
+    }, status_code=status.HTTP_400_BAD_REQUEST)
 
 
 class VerifyItem(BaseModel):
@@ -90,8 +91,11 @@ async def logout(request: Request) -> JSONResponse:
 
 
 class LoginItem(BaseModel):
+    # 对应数据表中的name
     name: str
+    # 双层加密后的密码
     token: str
+    # 双层加密时加入的盐
     salt: str
 
 
@@ -99,15 +103,8 @@ class LoginItem(BaseModel):
 async def login(item: LoginItem, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
     登录，在 session 中保存登录信息
-
-    POST 表单信息：
-    {
-        "name": str(对应数据表中的name)
-        "token": str(双层加密后的密码)
-        "salt": str(双层加密时加入的盐)
-    }
     """
-    try_fetch = await get_user_by_name(db, item.name)
+    try_fetch = await crud.get_user_by_name(db, item.name)
     fetch_token = None
     if try_fetch is not None:
         fetch_token = try_fetch.token
@@ -115,11 +112,12 @@ async def login(item: LoginItem, request: Request, db: AsyncSession = Depends(ge
         return JSONResponse(content={
             "msg": "用户名不存在！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
-    if encrypter(str(fetch_token), item.salt) != item.token:
+    if crud.encrypter(str(fetch_token), item.salt) != item.token:
         return JSONResponse(content={
             "msg": "密码错误！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
-    request.session["user_id"] = try_fetch.uid
+    request.session["user_id"] = try_fetch.user_id
+    request.session["identity"] = try_fetch.identity
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
@@ -134,7 +132,7 @@ async def team_info_fetch(request: Request, db: AsyncSession = Depends(get_db)) 
         return JSONResponse(content={
             "msg": "您并未登录！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
-    fetch_result = await get_user(db, user_id)
+    fetch_result = await crud.get_user(db, user_id)
     if fetch_result is None:
         return JSONResponse({
             "msg": "用户不存在！"
@@ -147,8 +145,11 @@ async def team_info_fetch(request: Request, db: AsyncSession = Depends(get_db)) 
 
 
 class TeaminfoSaveItem(BaseModel):
+    # 队长信息
     leaders: List[Dict[str, str]]
+    # 队员信息
     members: List[Dict[str, str]]
+    # 联系方式
     contact: str
 
 
@@ -156,24 +157,17 @@ class TeaminfoSaveItem(BaseModel):
 async def team_info_save(item: TeaminfoSaveItem, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
     Team 用户保存队伍成员信息
-
-    POST 表单信息：
-    {
-        "leaders": str(队长信息)
-        "members": str(队员信息)
-        "contact": str(联系方式)
-    }
     """
     if (user_id := request.session.get("user_id")) is None:
         return JSONResponse(content={
             "msg": "您尚未登录！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
-    fetch_result = await get_user(db, user_id)
+    fetch_result = await crud.get_user(db, user_id)
     if fetch_result is None:
         return JSONResponse({
             "msg": "用户不存在！"
         }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    await update_teaminfo(db, user_id, str_encode(item.leaders), str_encode(item.members), item.contact)
+    await crud.update_teaminfo(db, user_id, crud.str_encode(item.leaders), crud.str_encode(item.members), item.contact)
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
@@ -183,13 +177,13 @@ async def fetch_userdata(which: str, request: Request, db: AsyncSession = Depend
     获取已登录用户的信息
 
     通过路由传入字符串，表示需要获取的内容名称，总共有如下几种：
-    user_id:    uid
-    real_name:  name
+    user_id:    user_id
+    name:       name
     email:      email
     identity:   itentity
     contact:    contact
-    leader:     leaders
-    member:     members
+    leaders:    leaders
+    members:    members
     award:      award
     all:        除 token 和 award 外全部字段
     """
@@ -197,7 +191,7 @@ async def fetch_userdata(which: str, request: Request, db: AsyncSession = Depend
         return JSONResponse(content={
             "msg": "您尚未登录！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
-    fetch_result = await get_user(db, user_id)
+    fetch_result = await crud.get_user(db, user_id)
     if fetch_result is None:
         return JSONResponse({
             "msg": "用户不存在！"
@@ -205,11 +199,11 @@ async def fetch_userdata(which: str, request: Request, db: AsyncSession = Depend
     match which:
         case "user_id":
             return JSONResponse(content={
-                "user_id": fetch_result.uid
+                "user_id": fetch_result.user_id
             }, status_code=status.HTTP_200_OK)
-        case "real_name":
+        case "name":
             return JSONResponse(content={
-                "real_name": fetch_result.name
+                "name": fetch_result.name
             }, status_code=status.HTTP_200_OK)
         case "email":
             return JSONResponse(content={
@@ -223,13 +217,13 @@ async def fetch_userdata(which: str, request: Request, db: AsyncSession = Depend
             return JSONResponse(content={
                 "contact": fetch_result.contact
             }, status_code=status.HTTP_200_OK)
-        case "leader":
+        case "leaders":
             return JSONResponse(content={
-                "leader": fetch_result.leaders
+                "leaders": fetch_result.leaders
             }, status_code=status.HTTP_200_OK)
-        case "member":
+        case "members":
             return JSONResponse(content={
-                "member": fetch_result.members
+                "members": fetch_result.members
             }, status_code=status.HTTP_200_OK)
         case "award":
             return JSONResponse(content={
@@ -237,7 +231,7 @@ async def fetch_userdata(which: str, request: Request, db: AsyncSession = Depend
             }, status_code=status.HTTP_200_OK)
         case "all":
             return JSONResponse(content={
-                "user_id": fetch_result.uid,
+                "user_id": fetch_result.user_id,
                 "real_name": fetch_result.name,
                 "email": fetch_result.email,
                 "identity": fetch_result.identity,
@@ -249,3 +243,61 @@ async def fetch_userdata(which: str, request: Request, db: AsyncSession = Depend
             return JSONResponse(content={
                 "msg": "未找到该存储字段！"
             }, status_code=status.HTTP_400_BAD_REQUEST)
+
+
+#####################
+# 用户信息后台管理 Api
+#####################
+
+
+@router.post("/manage/user/create")
+async def user_create(user: schemas.UserCreate, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    创建一个用户
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    new_user = await crud.create_user(db, user)
+    if not new_user:
+        return JSONResponse(content={
+            "msg": "创建用户失败：用户已经存在！"
+        }, status_code=status.HTTP_400_BAD_REQUEST)
+    if user.email is not None:
+        await send_mail(
+            target=user.email, sender_name="NYPT",
+            title="NYPT 用户信息", msg=Config.msg_create % (user.name, b64decode(user.token).decode('utf-8'))
+        )
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/manage/user/delete/{id}")
+async def user_delete(id: int, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    stat = await crud.delete_user(db, id)
+    if not stat:
+        return JSONResponse(content={
+            "msg": "删除用户失败：用户不存在！"
+        }, status_code=status.HTTP_400_BAD_REQUEST)
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
+@router.post("/manage/user/set")
+async def user_set(user: schemas.User, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    设置用户信息
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    stat = await crud.update_user(db, user)
+    if not stat:
+        return JSONResponse(content={
+            "msg": "设置用户信息失败：用户不存在！"
+        }, status_code=status.HTTP_400_BAD_REQUEST)
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
