@@ -171,7 +171,7 @@ async def team_info_save(item: TeaminfoSaveItem, request: Request, db: AsyncSess
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/userdata/which")
+@router.get("/userdata/{which}")
 async def fetch_userdata(which: str, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
     获取已登录用户的信息
@@ -301,3 +301,15 @@ async def user_set(user: schemas.User, request: Request, db: AsyncSession = Depe
             "msg": "设置用户信息失败：用户不存在！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/manage/user/getall")
+async def user_getall(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    users = await crud.get_all_users(db)
+    return JSONResponse(content={
+        "users": [{**user.__dict__} for user in users]
+    })

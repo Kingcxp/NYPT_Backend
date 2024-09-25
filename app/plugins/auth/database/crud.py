@@ -1,9 +1,7 @@
 import hashlib
 
-from random import randint
 from base64 import b64encode
-from functools import reduce
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Iterable, List, Dict, Optional
 
@@ -64,22 +62,6 @@ def str_decode(members_str: str) -> List[Dict[str, str]]:
         return []
     members = members_str.split(' | ')
     return [from_str(member) for member in members]
-
-
-def generate_password(length: int, keyring: str = "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM") -> str:
-    """生成指定长度的密码
-
-    Args:
-        length (int): 密码长度
-        keyring (str, optional): 密码字符的所有备选项.
-
-    Returns:
-        str: 生成的密码
-    """
-    return reduce(
-        lambda x, y: x + y,
-        [keyring[randint(0, len(keyring) - 1)] for _ in range(length)]
-    )
 
 
 async def get_user(db: AsyncSession, user_id: int) -> Optional[models.User]:

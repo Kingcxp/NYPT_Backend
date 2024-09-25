@@ -16,7 +16,8 @@ async def init_db(_: APIRouter) -> AsyncGenerator[None, None]:
             await create_user(db, UserCreate(
                 name="Admin",
                 identity="Administrator",
-                token="adminpass"
+                token="adminpass",
+                email=None
             ))
     yield
 
