@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from fastapi import Request, Depends, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List
+from typing import Dict, List, Union
 from random import randint
 from functools import reduce
 
@@ -43,7 +43,7 @@ async def verify_email(item: VerifyItem, request: Request) -> JSONResponse:
     将验证码存储在 session 中
     """
     timeout: float = 30.0
-    captcha: str = reduce(lambda x, y: x + y, [str(randint(0, 9)) for i in range(6)])
+    captcha: str = reduce(lambda x, y: x + y, [str(randint(0, 9)) for _ in range(6)])
     if (last_time := request.session.get("last_captcha_time")) is not None and (time_left := timeout - (time.time() - last_time)) > 0.0:
         return JSONResponse(content={
             "time_left": ceil(time_left),
@@ -138,9 +138,9 @@ async def team_info_fetch(request: Request, db: AsyncSession = Depends(get_db)) 
             "msg": "用户不存在！"
         }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return JSONResponse(content={
-        "leaders": fetch_result.leaders,
-        "members": fetch_result.members,
-        "contact": fetch_result.contact
+        "leaders": crud.str_decode(str(fetch_result.leaders)),
+        "members": crud.str_decode(str(fetch_result.members)),
+        "contact": "" if fetch_result.contact is None else fetch_result.contact
     }, status_code=status.HTTP_200_OK)
 
 
@@ -181,6 +181,7 @@ async def fetch_userdata(which: str, request: Request, db: AsyncSession = Depend
     name:       name
     email:      email
     identity:   itentity
+    teamname:   teamname
     contact:    contact
     leaders:    leaders
     members:    members
@@ -213,6 +214,10 @@ async def fetch_userdata(which: str, request: Request, db: AsyncSession = Depend
             return JSONResponse(content={
                 "identity": fetch_result.identity
             }, status_code=status.HTTP_200_OK)
+        case "teamname":
+            return JSONResponse(content={
+                "teamname": fetch_result.teamname
+            }, status_code=status.HTTP_200_OK)
         case "contact":
             return JSONResponse(content={
                 "contact": fetch_result.contact
@@ -235,6 +240,7 @@ async def fetch_userdata(which: str, request: Request, db: AsyncSession = Depend
                 "real_name": fetch_result.name,
                 "email": fetch_result.email,
                 "identity": fetch_result.identity,
+                "teamname": fetch_result.teamname,
                 "contact": fetch_result.contact,
                 "leader": fetch_result.leaders,
                 "member": fetch_result.members
@@ -303,13 +309,93 @@ async def user_set(user: schemas.User, request: Request, db: AsyncSession = Depe
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/manage/user/getall")
-async def user_getall(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+def identify(identity: str) -> str:
+    """
+    将用户类型转换为中文
+    """
+    if identity == "Administrator":
+        return "管理员"
+    elif identity == "Team":
+        return "比赛队伍"
+    elif identity == "VolunteerA":
+        return "志愿者记分员"
+    elif identity == "VolunteerB":
+        return "志愿者计时员"
+    return "未知身份？"
+
+
+@router.get("/manage/user/getall/{page}/{limit}")
+async def user_getall(page: int, limit: int, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    获取指定范围的用户信息
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    users = await crud.get_all_users(db, (page - 1) * limit, limit)
+    return JSONResponse(content={
+        "users": [{
+            "name": user.name,
+            "user_id": user.user_id,
+            "token": user.token,
+            "email": user.email if user.email is not None else "未提供邮箱",
+            "teamname": user.teamname,
+            "leaders": user.leaders,
+            "members": user.members,
+            "contact": user.contact,
+            "identity": identify(str(user.identity)),
+            "view_token": False
+        } for user in users]
+    })
+
+
+@router.get("/manage/user/total")
+async def user_total(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    获取用户总数，最大值25565
+    """
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
             "msg": "权限不足！"
         }, status_code=status.HTTP_403_FORBIDDEN)
     users = await crud.get_all_users(db)
     return JSONResponse(content={
-        "users": [{**user.__dict__} for user in users]
+        "total": len([user for user in users])
+    }, status_code=status.HTTP_200_OK)
+
+
+@router.get("/manage/user/search/{id}")
+async def user_search_id(id: Union[int, str], request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    根据用户 id 或 name 查询用户并返回
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    user_found = None
+    if type(id) == str:
+        user_found = await crud.get_user_by_name(db, id)
+    elif type(id) == int:
+        user_found = await crud.get_user(db, id)
+    else:
+        return JSONResponse(content={
+            "msg": "无效的用户标识！"
+        }, status_code=status.HTTP_400_BAD_REQUEST)
+    if user_found is None:
+        return JSONResponse(content={
+            "msg": "未找到用户！"
+        }, status_code=status.HTTP_404_NOT_FOUND)
+    return JSONResponse(content={
+        "name": user_found.name,
+        "user_id": user_found.user_id,
+        "token": user_found.token,
+        "email": user_found.email if user_found.email is not None else "未提供邮箱",
+        "teamname": user_found.teamname,
+        "leaders": user_found.leaders,
+        "members": user_found.members,
+        "contact": user_found.contact,
+        "identity": identify(str(user_found.identity)),
     })
+

@@ -58,7 +58,7 @@ def str_decode(members_str: str) -> List[Dict[str, str]]:
             "qq": values[6],
             "email": values[7]
         }
-    if members_str == '':
+    if members_str == "None" or members_str == "":
         return []
     members = members_str.split(' | ')
     return [from_str(member) for member in members]
@@ -117,9 +117,10 @@ async def delete_user(db: AsyncSession, user_id: int) -> bool:
     """
     删除一个用户信息，返回是否成功
     """
-    if user := await get_user(db, user_id):
+    if (user := await get_user(db, user_id)) is None:
         return False
     await db.delete(user)
+    await db.commit()
     await db.flush()
     return True
 

@@ -21,6 +21,7 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     user_id: int
+    teamname: Optional[str]
     contact: Optional[str]
     leaders: Optional[str]
     members: Optional[str]
