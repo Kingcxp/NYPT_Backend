@@ -366,23 +366,15 @@ async def user_total(request: Request, db: AsyncSession = Depends(get_db)) -> JS
 
 
 @router.get("/manage/user/search/{id}")
-async def user_search_id(id: Union[int, str], request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+async def user_search_id(id: str, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
-    根据用户 id 或 name 查询用户并返回
+    根据用户 name 查询用户并返回
     """
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
             "msg": "权限不足！"
         }, status_code=status.HTTP_403_FORBIDDEN)
-    user_found = None
-    if type(id) == str:
-        user_found = await crud.get_user_by_name(db, id)
-    elif type(id) == int:
-        user_found = await crud.get_user(db, id)
-    else:
-        return JSONResponse(content={
-            "msg": "无效的用户标识！"
-        }, status_code=status.HTTP_400_BAD_REQUEST)
+    user_found = await crud.get_user_by_name(db, id)
     if user_found is None:
         return JSONResponse(content={
             "msg": "未找到用户！"
