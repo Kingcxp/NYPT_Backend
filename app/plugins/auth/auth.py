@@ -293,7 +293,7 @@ class UserCreateAllItem(BaseModel):
 @router.post("/manage/user/createall")
 async def user_createall(item: UserCreateAllItem, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
-    批量创建用户
+    批量创建用户，并返回用户总数
     """
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
@@ -306,7 +306,10 @@ async def user_createall(item: UserCreateAllItem, request: Request, db: AsyncSes
             token=crud.generate_password(item.length),
             email=None
         ))
-    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+    users = await crud.get_all_users(db)
+    return JSONResponse(content={
+        "total": len([user for user in users])
+    }, status_code=status.HTTP_200_OK)
 
 
 @router.get("/manage/user/delete/{id}")
@@ -384,7 +387,7 @@ async def user_getall(page: int, limit: int, request: Request, db: AsyncSession 
 @router.get("/manage/user/total")
 async def user_total(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
-    获取用户总数，最大值25565
+    获取用户总数，最大值 25565
     """
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
