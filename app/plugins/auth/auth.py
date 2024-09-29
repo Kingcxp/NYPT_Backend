@@ -289,6 +289,7 @@ class UserCreateAllItem(BaseModel):
     length: int
 
 
+
 @router.post("/manage/user/createall")
 async def user_createall(item: UserCreateAllItem, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
@@ -300,7 +301,7 @@ async def user_createall(item: UserCreateAllItem, request: Request, db: AsyncSes
         }, status_code=status.HTTP_403_FORBIDDEN)
     for i in range(item.begin, item.end + 1):
         await crud.create_user(db, schemas.UserCreate(
-            name=f"{item.identity}{i}",
+            name="%s%03d" % (item.identity, i),
             identity=item.identity,
             token=crud.generate_password(item.length),
             email=None
