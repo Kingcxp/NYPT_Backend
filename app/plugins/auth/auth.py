@@ -326,23 +326,6 @@ async def user_delete(id: int, request: Request, db: AsyncSession = Depends(get_
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
-@router.post("/manage/user/set")
-async def user_set(user: schemas.User, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
-    """
-    设置用户信息
-    """
-    if request.session.get("identity") != "Administrator":
-        return JSONResponse(content={
-            "msg": "权限不足！"
-        }, status_code=status.HTTP_403_FORBIDDEN)
-    stat = await crud.update_user(db, user)
-    if not stat:
-        return JSONResponse(content={
-            "msg": "设置用户信息失败：用户不存在！"
-        }, status_code=status.HTTP_400_BAD_REQUEST)
-    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
-
-
 def identify(identity: str) -> str:
     """
     将用户类型转换为中文

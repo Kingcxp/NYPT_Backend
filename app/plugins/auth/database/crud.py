@@ -114,7 +114,7 @@ async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 25565) -> 
     """
     获取所有的用户信息
     """
-    return (await db.execute(select(models.User).offset(skip).limit(limit))).scalars().all()
+    return (await db.execute(select(models.User).offset(skip).limit(limit).order_by(models.User.user_id))).scalars().all()
 
 
 async def create_user(db: AsyncSession, user: schemas.UserCreate) -> Optional[models.User]:
@@ -140,18 +140,6 @@ async def delete_user(db: AsyncSession, user_id: int) -> bool:
     await db.delete(user)
     await db.commit()
     await db.flush()
-    return True
-
-
-async def update_user(db: AsyncSession, user: schemas.User) -> bool:
-    """
-    更新一个用户信息，返回是否成功
-    """
-    if await get_user(db, user.user_id):
-        return False
-    await db.execute(update(models.User).where(models.User.user_id == user.user_id).values({
-        models.User.__dict__[key]: value for key, value in user.model_dump().items() if key != 'user_id'
-    }))
     return True
 
 

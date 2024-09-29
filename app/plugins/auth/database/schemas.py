@@ -20,6 +20,9 @@ class UserCreate(UserBase):
 
 
 class User(UserBase):
+    """
+    获取用户信息时获得的内容
+    """
     user_id: int
     teamname: Optional[str]
     contact: Optional[str]
