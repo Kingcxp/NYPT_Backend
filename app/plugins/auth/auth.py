@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from fastapi import Request, Depends, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List, Union
+from typing import Dict, List
 from random import randint
 from functools import reduce
 
@@ -275,6 +275,36 @@ async def user_create(user: schemas.UserCreate, request: Request, db: AsyncSessi
             target=user.email, sender_name="NYPT",
             title="NYPT 用户信息", msg=Config.msg_create % (user.name, b64decode(user.token).decode('utf-8'))
         )
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
+class UserCreateAllItem(BaseModel):
+    # 起始编号
+    begin: int
+    # 终止编号
+    end: int
+    # 身份类型
+    identity: str
+    # 密码串长度
+    length: int
+
+
+@router.post("/manage/user/createall")
+async def user_createall(item: UserCreateAllItem, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    批量创建用户
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    for i in range(item.begin, item.end + 1):
+        await crud.create_user(db, schemas.UserCreate(
+            name=f"{item.identity}{i}",
+            identity=item.identity,
+            token=crud.generate_password(item.length),
+            email=None
+        ))
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 

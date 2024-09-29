@@ -1,6 +1,8 @@
 import hashlib
 
+from random import randint
 from base64 import b64encode
+from functools import reduce
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Iterable, List, Dict, Optional
@@ -64,6 +66,22 @@ def str_decode(members_str: str) -> List[Dict[str, str]]:
     return [from_str(member) for member in members]
 
 
+def generate_password(length: int, keyring: str = "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM") -> str:
+    """生成一个随机密码
+
+    Args:
+        length (int): 密码长度
+        keyring (str): 密码字符的所有备选项
+
+    Returns:
+        str: 生成的密码
+    """
+    return reduce(
+        lambda x, y: x + y,
+        [keyring[randint(0, len(keyring) - 1)] for _ in range(length)]
+    )
+
+
 async def get_user(db: AsyncSession, user_id: int) -> Optional[models.User]:
     """
     通过用户名 id 获取用户信息
@@ -101,7 +119,7 @@ async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 25565) -> 
 
 async def create_user(db: AsyncSession, user: schemas.UserCreate) -> Optional[models.User]:
     """
-    创建一个用户信息，提供的密码会自动加密，如果无法创建，返回错误信息
+    创建一个用户信息，提供的密码会自动加密，如果无法创建，返回 None
     """
     if await get_user_by_name(db, user.name):
         return None
