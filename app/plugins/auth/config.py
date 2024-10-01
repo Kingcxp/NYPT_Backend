@@ -1,5 +1,7 @@
 import os
 
+from typing import Dict, List
+
 
 class Config:
     verify_msg = \
@@ -17,13 +19,15 @@ class Config:
     （这是一封自动发送的邮件，请不要回复！）
 """
     #! 配置模板存放位置
-    config_template_path = os.path.join(
+    config_template_path: str = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "config_template.xlsx"
     )
 
     #! 定义配置
-    config_default = {
+    config_default: Dict[str, str] = {
+        "比赛规则(CUPT/JSYPT)": "CUPT",
+        "比赛类型(NORMAL/SPECIAL)": "NORMAL",
         "每场比赛裁判个数": "5",
         "会场总个数": "10",
         "比赛轮数": "3",
@@ -33,7 +37,7 @@ class Config:
     }
 
     #! 队伍信息表头
-    teaminfo_headers = [
+    teaminfo_headers: List[str] = [
         "学校名",
         "队伍名",
         "抽签号",
