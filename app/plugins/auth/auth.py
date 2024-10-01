@@ -418,7 +418,7 @@ async def get_config_template(request: Request, db: AsyncSession = Depends(get_d
         return JSONResponse(content={
             "msg": "权限不足！"
         }, status_code=status.HTTP_403_FORBIDDEN)
-    # TODO: 生成模板
+    await crud.generate_config_template(db)
     return FileResponse(
         path=Config.config_template_path,
         status_code=status.HTTP_200_OK,
