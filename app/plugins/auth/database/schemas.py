@@ -29,6 +29,8 @@ class User(UserBase):
     leaders: Optional[str]
     members: Optional[str]
     award: Optional[str]
+    school: Optional[str]
+    tel: Optional[str]
 
     class Config:
         from_attributes = True

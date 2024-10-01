@@ -18,6 +18,9 @@ class User(database.Base):
         leaders: 领队信息(身份非队伍无效)格式：姓名 - 性别 - 手机号 - 身份证号 - 学院 - 专业 - QQ - 邮箱
         members: 队员信息(身份非队伍无效)格式同领队信息，每个队员用 ' | ' 隔开
         award: 奖项信息(身份非队伍无效)
+        TODO: 新添加！
+        school: 学校名称
+        tel: 联系人电话号码
     """
     __tablename__ = "users"
 
@@ -31,3 +34,5 @@ class User(database.Base):
     leaders = Column(String(4096))
     members = Column(String(4096))
     award = Column(String(10485760))
+    school = Column(String(128))
+    tel = Column(String(32))

@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from typing import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from .database import *
+from .database import database, crud, schemas
 
 
 @asynccontextmanager
@@ -10,10 +10,10 @@ async def init_db(_: APIRouter) -> AsyncGenerator[None, None]:
     async with database.engine.begin() as conn:
         await conn.run_sync(database.Base.metadata.create_all)
     async with database.Session() as db:
-        admin = await get_user_by_identity(db, "Administrator")
+        admin = await crud.get_user_by_identity(db, "Administrator")
         if not admin:
             # 创建默认的管理员
-            await create_user(db, UserCreate(
+            await crud.create_user(db, schemas.UserCreate(
                 name="Admin",
                 identity="Administrator",
                 token="adminpass",

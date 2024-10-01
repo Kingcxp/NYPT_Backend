@@ -4,9 +4,9 @@ from math import ceil
 from base64 import b64decode
 from pydantic import BaseModel
 from fastapi import Request, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List
+from typing import Dict, List, Union
 from random import randint
 from functools import reduce
 
@@ -408,3 +408,18 @@ async def user_search_id(id: str, request: Request, db: AsyncSession = Depends(g
         "identity": identify(str(user_found.identity)),
     })
 
+
+@router.get("/manage/config/template")
+async def get_config_template(request: Request, db: AsyncSession = Depends(get_db)) -> Union[JSONResponse, FileResponse]:
+    """
+    获取服务器配置模板
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    # TODO: 生成模板
+    return FileResponse(
+        path=Config.config_template_path,
+        status_code=status.HTTP_200_OK,
+    )

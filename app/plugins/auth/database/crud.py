@@ -1,3 +1,4 @@
+import xlwt
 import hashlib
 
 from random import randint
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Iterable, List, Dict, Optional
 
 from . import models, schemas
+from ..config import Config
 
 
 def encrypter(victim: str, salt: str) -> str:
@@ -103,6 +105,13 @@ async def get_user_by_identity(db: AsyncSession, identity: str) -> Optional[mode
     return (await db.execute(select(models.User).where(models.User.identity == identity))).scalars().first()
 
 
+async def get_all_users_by_identity(db: AsyncSession, identity: str) -> Iterable[models.User]:
+    """
+    获取所有身份为 identity 的用户
+    """
+    return (await db.execute(select(models.User).where(models.User.identity == identity))).scalars().all()
+
+
 async def get_last_user(db: AsyncSession) -> Optional[models.User]:
     """
     获取编号最大的那个用户信息
@@ -152,3 +161,67 @@ async def update_teaminfo(db: AsyncSession, user_id: int, leaders: str, members:
         models.User.members: members,
         models.User.contact: contact
     }))
+
+
+async def generate_config_template(db: AsyncSession) -> bool:
+    """
+    生成配置文件模板，返回是否成功
+    """
+    try:
+        workbook = xlwt.Workbook(encoding="utf-8")
+        team_infos = await get_all_users_by_identity(db, "Team")
+        team_infos = sorted(team_infos, key=lambda x: str(x.school))
+
+        #? 配置表
+        sheet_config = workbook.add_sheet("软件配置")
+        index: int = -1
+        for key, value in Config.config_default.items():
+            index += 1
+            sheet_config.write(index, 0, key)
+            sheet_config.write(index, 1, value)
+
+        #? 赛题信息
+        sheet_info = workbook.add_sheet("赛题信息")
+        sheet_info.write(0, 0, "题号")
+        sheet_info.write(0, 1, "题名")
+
+        #? 队伍信息
+        sheet_team = workbook.add_sheet("队伍信息")
+        index = -1
+        for header in Config.teaminfo_headers:
+            index += 1
+            sheet_team.write(0, index, header)
+        index = 0
+        for team in team_infos:
+            index += 1
+            sheet_team.write(index, 0, team.school)
+            sheet_team.write(index, 1, team.name)
+            sheet_team.write(index, 2, str(index))
+            members: List[Dict[str, str]] = str_decode(str(team.members))
+            i = 0
+            for member in members:
+                i += 1
+                sheet_team.write(index, 1 + i * 2, f"{i}号选手")
+                sheet_team.write(index, 2 + i * 2, member["gender"])
+
+        #? 裁判信息
+        sheet_referee = workbook.add_sheet("裁判信息")
+        sheet_referee.write(0, 0, "学校名")
+        sheet_referee.write(0, 1, "裁判们")
+
+        #? 队伍题库
+        sheet_problem_set = workbook.add_sheet("队伍题库")
+        sheet_problem_set.write(0, 0, "学校名")
+        sheet_problem_set.write(0, 1, "队伍名")
+        sheet_problem_set.write(0, 2, "题库")
+        index = 0
+        for team in team_infos:
+            index += 1
+            sheet_problem_set.write(index, 0, team.school)
+            sheet_problem_set.write(index, 1, team.name)
+
+        workbook.save(Config.config_template_path)
+
+        return True
+    finally:
+        return False
