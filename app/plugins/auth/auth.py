@@ -14,6 +14,7 @@ from . import router
 from .config import Config
 from .database import get_db, crud, schemas
 from ..utils.email import send_mail
+from ...manager import console
 
 
 @router.get("/id")
@@ -51,7 +52,7 @@ async def verify_email(item: VerifyItem, request: Request) -> JSONResponse:
         }, status_code=status.HTTP_400_BAD_REQUEST)
     if await send_mail(
         target=item.email, sender_name="NYPT",
-        title="NYPT 验证码", msg=Config.verify_msg % captcha
+        title="NYPT 验证码", msg=Config.VERIFY_MSG % captcha
     ):
         request.session["captcha"] = captcha
         request.session["last_captcha_time"] = time.time()
@@ -71,7 +72,8 @@ async def deprecate(request: Request) -> JSONResponse:
         request.session.pop("captcha")
         request.session.pop("last_captcha_time")
         request.session.pop("email")
-    except:
+    except Exception:
+        console.print_exception(show_locals=True)
         pass
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
@@ -273,7 +275,7 @@ async def user_create(user: schemas.UserCreate, request: Request, db: AsyncSessi
     if user.email is not None:
         await send_mail(
             target=user.email, sender_name="NYPT",
-            title="NYPT 用户信息", msg=Config.msg_create % (user.name, b64decode(user.token).decode('utf-8'))
+            title="NYPT 用户信息", msg=Config.CREATE_MSG % (user.name, b64decode(user.token).decode('utf-8'))
         )
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
@@ -420,6 +422,7 @@ async def get_config_template(request: Request, db: AsyncSession = Depends(get_d
         }, status_code=status.HTTP_403_FORBIDDEN)
     await crud.generate_config_template(db)
     return FileResponse(
-        path=Config.config_template_path,
+        path=Config.CONFIG_TEMPLATE_PATH,
+        filename="server_config.xlsx",
         status_code=status.HTTP_200_OK,
     )

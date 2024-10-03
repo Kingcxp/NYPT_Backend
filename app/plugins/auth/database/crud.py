@@ -175,7 +175,7 @@ async def generate_config_template(db: AsyncSession) -> bool:
         #? 配置表
         sheet_config = workbook.add_sheet("软件配置")
         index: int = -1
-        for key, value in Config.config_default.items():
+        for key, value in Config.CONFIG_DEFAULT.items():
             index += 1
             sheet_config.write(index, 0, key)
             sheet_config.write(index, 1, value)
@@ -188,7 +188,7 @@ async def generate_config_template(db: AsyncSession) -> bool:
         #? 队伍信息
         sheet_team = workbook.add_sheet("队伍信息")
         index = -1
-        for header in Config.teaminfo_headers:
+        for header in Config.TEAMINFO_HEADERS:
             index += 1
             sheet_team.write(0, index, header)
         index = 0
@@ -207,20 +207,21 @@ async def generate_config_template(db: AsyncSession) -> bool:
         #? 裁判信息
         sheet_referee = workbook.add_sheet("裁判信息")
         sheet_referee.write(0, 0, "学校名")
-        sheet_referee.write(0, 1, "裁判们")
+        sheet_referee.write(0, 1, "裁判们（一空一个，请不要全部放在一个单元格中）")
 
         #? 队伍题库
         sheet_problem_set = workbook.add_sheet("队伍题库")
         sheet_problem_set.write(0, 0, "学校名")
         sheet_problem_set.write(0, 1, "队伍名")
         sheet_problem_set.write(0, 2, "题库")
+        sheet_problem_set.write(0, 3, "注：此表单为队伍的题库表单，用于不采用拒题而选择直接给出题库的比赛规则。若不需要此功能则不需要填写任何内容，也不要删除此表单。题库输入规则为题号用逗号隔开，例如：1,2,10 此处逗号半角圆角都可以")
         index = 0
         for team in team_infos:
             index += 1
             sheet_problem_set.write(index, 0, team.school)
             sheet_problem_set.write(index, 1, team.name)
 
-        workbook.save(Config.config_template_path)
+        workbook.save(Config.CONFIG_TEMPLATE_PATH)
 
         return True
     finally:
