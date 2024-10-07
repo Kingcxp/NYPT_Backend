@@ -19,7 +19,7 @@ async def init_db(_: APIRouter) -> AsyncGenerator[None, None]:
         await conn.run_sync(database.Base.metadata.create_all)
     if os.path.exists(Config.CONFIG_PATH):
         try:
-            server_config = crud.WorkbookReader(Config.CONFIG_PATH)
+            server_config = crud.ServerConfigReader(Config.CONFIG_PATH)
             async with database.Session() as session:
                 await crud.create_all_rooms(session, server_config.room_total)
         except Exception:

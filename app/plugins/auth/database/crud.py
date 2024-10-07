@@ -168,12 +168,12 @@ async def generate_config_template(db: AsyncSession) -> bool:
     生成配置文件模板，返回是否成功
     """
     try:
-        workbook = xlwt.Workbook(encoding="utf-8")
+        workbook: xlwt.Workbook = xlwt.Workbook(encoding="utf-8")
         team_infos = await get_all_users_by_identity(db, "Team")
         team_infos = sorted(team_infos, key=lambda x: str(x.school))
 
         #? 配置表
-        sheet_config = workbook.add_sheet("软件配置")
+        sheet_config: xlwt.Worksheet = workbook.add_sheet("软件配置")
         index: int = -1
         for key, value in Config.CONFIG_DEFAULT.items():
             index += 1
@@ -181,12 +181,12 @@ async def generate_config_template(db: AsyncSession) -> bool:
             sheet_config.write(index, 1, value)
 
         #? 赛题信息
-        sheet_info = workbook.add_sheet("赛题信息")
+        sheet_info: xlwt.Worksheet = workbook.add_sheet("赛题信息")
         sheet_info.write(0, 0, "题号")
         sheet_info.write(0, 1, "题名")
 
         #? 队伍信息
-        sheet_team = workbook.add_sheet("队伍信息")
+        sheet_team: xlwt.Worksheet = workbook.add_sheet("队伍信息")
         index = -1
         for header in Config.TEAMINFO_HEADERS:
             index += 1
@@ -194,8 +194,8 @@ async def generate_config_template(db: AsyncSession) -> bool:
         index = 0
         for team in team_infos:
             index += 1
-            sheet_team.write(index, 0, team.school)
-            sheet_team.write(index, 1, team.name)
+            sheet_team.write(index, 0, str(team.school))
+            sheet_team.write(index, 1, str(team.name))
             sheet_team.write(index, 2, str(index))
             members: List[Dict[str, str]] = str_decode(str(team.members))
             i = 0
@@ -205,12 +205,12 @@ async def generate_config_template(db: AsyncSession) -> bool:
                 sheet_team.write(index, 2 + i * 2, member["gender"])
 
         #? 裁判信息
-        sheet_referee = workbook.add_sheet("裁判信息")
-        sheet_referee.write(0, 0, "学校名")
-        sheet_referee.write(0, 1, "裁判们（一空一个，请不要全部放在一个单元格中）")
+        sheet_judge: xlwt.Worksheet = workbook.add_sheet("裁判信息")
+        sheet_judge.write(0, 0, "学校名")
+        sheet_judge.write(0, 1, "裁判们（一空一个，请不要全部放在一个单元格中）")
 
         #? 队伍题库
-        sheet_problem_set = workbook.add_sheet("队伍题库")
+        sheet_problem_set: xlwt.Worksheet = workbook.add_sheet("队伍题库")
         sheet_problem_set.write(0, 0, "学校名")
         sheet_problem_set.write(0, 1, "队伍名")
         sheet_problem_set.write(0, 2, "题库")
@@ -218,8 +218,8 @@ async def generate_config_template(db: AsyncSession) -> bool:
         index = 0
         for team in team_infos:
             index += 1
-            sheet_problem_set.write(index, 0, team.school)
-            sheet_problem_set.write(index, 1, team.name)
+            sheet_problem_set.write(index, 0, str(team.school))
+            sheet_problem_set.write(index, 1, str(team.name))
 
         workbook.save(Config.CONFIG_TEMPLATE_PATH)
 

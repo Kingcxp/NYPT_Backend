@@ -14,6 +14,12 @@ class Config:
         "server_config.xlsx"
     )
 
+    #! 对阵表文件路径
+    COUNTERPART_TABLE_PATH: str = os.path.join(
+        _self_path,
+        "counterpart_table.xlsx"
+    )
+
     #! 服务器文件路径
     #? 临时数据存储路径
     TEMP_FOLDER: str = os.path.join(
