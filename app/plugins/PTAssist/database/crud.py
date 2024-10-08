@@ -3,7 +3,7 @@ import xlwt
 
 from math import exp
 from functools import reduce
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from random import randint, shuffle, random
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Iterable, Optional, List, Any, Callable, Set, Tuple, Dict
@@ -72,6 +72,15 @@ async def delete_room(db: AsyncSession, room_id: int) -> bool:
     await db.commit()
     await db.flush()
     return True
+
+
+async def delete_all_rooms(db: AsyncSession) -> None:
+    """
+    删除所有会场
+    """
+    await db.execute(delete(models.Room))
+    await db.commit()
+    await db.flush()
 
 
 class ServerConfigReader:

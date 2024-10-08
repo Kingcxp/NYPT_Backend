@@ -99,6 +99,39 @@ async def get_roomdata(item: GetRoomdataItem, db: AsyncSession = Depends(get_db)
 #####################
 
 
+@router.get("/rooms/clear")
+async def clear_rooms(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    清空所有会场数据并重新生成
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code= status.HTTP_403_FORBIDDEN)
+    await crud.delete_all_rooms(db, )
+    if server_config is not None:
+        await crud.create_all_rooms(db, server_config.room_total)
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/rooms/info")
+async def get_rooms_info(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    获取所有会场数据
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code= status.HTTP_403_FORBIDDEN)
+    rooms = await crud.get_all_rooms(db)
+    return JSONResponse(content={
+        "rooms": [{
+            "room_id": room.room_id,
+            "token": room.token
+        } for room in rooms]
+    }, status_code=status.HTTP_200_OK)
+
+
 @router.post("/config/upload")
 async def upload_config(request: Request, file: bytes = File()) -> JSONResponse:
     """
