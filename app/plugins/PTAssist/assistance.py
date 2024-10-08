@@ -99,7 +99,7 @@ async def get_roomdata(item: GetRoomdataItem, db: AsyncSession = Depends(get_db)
 #####################
 
 
-@router.get("/rooms/clear")
+@router.get("/manage/rooms/clear")
 async def clear_rooms(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
     清空所有会场数据并重新生成
@@ -114,7 +114,7 @@ async def clear_rooms(request: Request, db: AsyncSession = Depends(get_db)) -> J
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/rooms/info")
+@router.get("/manage/rooms/info")
 async def get_rooms_info(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
     获取所有会场数据
@@ -132,7 +132,7 @@ async def get_rooms_info(request: Request, db: AsyncSession = Depends(get_db)) -
     }, status_code=status.HTTP_200_OK)
 
 
-@router.post("/config/upload")
+@router.post("/manage/config/upload")
 async def upload_config(request: Request, file: bytes = File()) -> JSONResponse:
     """
     上传配置文件到服务器
@@ -153,7 +153,7 @@ async def upload_config(request: Request, file: bytes = File()) -> JSONResponse:
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/config/download")
+@router.get("/manage/config/download")
 async def download_config(request: Request) -> Response:
     """
     下载配置文件到客户端
