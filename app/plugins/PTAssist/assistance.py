@@ -108,7 +108,7 @@ async def clear_rooms(request: Request, db: AsyncSession = Depends(get_db)) -> J
         return JSONResponse(content={
             "msg": "权限不足！"
         }, status_code= status.HTTP_403_FORBIDDEN)
-    await crud.delete_all_rooms(db, )
+    await crud.delete_all_rooms(db)
     if server_config is not None:
         await crud.create_all_rooms(db, server_config.room_total)
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
