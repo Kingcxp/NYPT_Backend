@@ -99,6 +99,26 @@ async def get_roomdata(item: GetRoomdataItem, db: AsyncSession = Depends(get_db)
 #####################
 
 
+@router.get("/manage/counterpart/generate")
+async def generate_counterpart_table(request: Request) -> Response:
+    """
+    生成对阵表
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code= status.HTTP_403_FORBIDDEN)
+    if not await crud.generate_counterpart_table():
+        return JSONResponse(content={
+            "msg": "生成失败！"
+        }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return FileResponse(
+        path=Config.COUNTERPART_TABLE_PATH,
+        filename="counterpart_table.xlsx",
+        status_code=status.HTTP_200_OK
+    )
+
+
 @router.get("/manage/rooms/clear")
 async def clear_rooms(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
