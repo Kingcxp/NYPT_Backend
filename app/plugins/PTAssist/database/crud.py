@@ -421,6 +421,7 @@ async def generate_counterpart_table() -> bool:
             judge_table.append(judge_table_room)
         writer.render_judges(judge_tables)
         writer.on_exit()
+        return True
 
     #! 卧槽？
     return False
