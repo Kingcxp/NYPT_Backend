@@ -3,10 +3,9 @@ import aiofiles
 
 from json import loads
 from pydantic import BaseModel
-from fastapi import Request, Depends, status, File
+from fastapi import Request, Depends, Response, status, File
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Union
 
 from . import router, server_config
 from .config import Config
@@ -122,7 +121,7 @@ async def upload_config(request: Request, file: bytes = File()) -> JSONResponse:
 
 
 @router.get("/config/download")
-async def download_config(request: Request) -> Union[JSONResponse, FileResponse]:
+async def download_config(request: Request) -> Response:
     """
     下载配置文件到客户端
     """

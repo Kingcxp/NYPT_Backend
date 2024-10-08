@@ -25,6 +25,7 @@ async def init_db(_: APIRouter) -> AsyncGenerator[None, None]:
         except Exception:
             console.print_exception(show_locals=True)
             server_config = None
+        crud.CounterpartTableWriter.server_config = server_config
     yield
 
 

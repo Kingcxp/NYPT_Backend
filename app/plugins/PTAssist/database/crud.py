@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Iterable, Optional, List, Any, Callable, Set, Tuple, Dict
 
 from . import models, schemas
-from .. import server_config
 from ..config import Config
 
 
@@ -145,6 +144,9 @@ class CounterpartTableWriter:
     """
     用来将对局信息写入到 Excel 文件中，已经存在的文件会被覆盖
     """
+    # 存取 server_config
+    server_config: Optional[ServerConfigReader] = None
+
     def __init__(self, path: str) -> None:
         self.path = path
         with open(self.path, "w"):
@@ -177,13 +179,13 @@ class CounterpartTableWriter:
             table (List[List[Any]]): 表格具体数值
             getter (Callable[[Any], str]): 如何表示表格中的数据，作为转换函数传入
         """
-        if server_config is None:
+        if self.server_config is None:
             return
         sheet.write(offset_row, offset_col + 1, "正方")
         sheet.write(offset_row, offset_col + 2, "反方")
         sheet.write(offset_row, offset_col + 3, "评方")
         sheet.write(offset_row, offset_col + 4, "观方")
-        for i in range(server_config.room_total):
+        for i in range(self.server_config.room_total):
             sheet.write(offset_row + i + 1, offset_col, f"会场{i + 1}")
         offset_row, offset_col = offset_row + 1, offset_col + 1
         for i in range(len(table)):
@@ -200,7 +202,7 @@ class CounterpartTableWriter:
         Args:
             judge_tables (List[List[List[Tuple[str, str]]]]): 裁判信息
         """
-        if server_config is None:
+        if self.server_config is None:
             return
         row = 1
         for table in judge_tables:
@@ -211,7 +213,7 @@ class CounterpartTableWriter:
                 for j in range(len(table[i])):
                     self.sheet_with_judge.write(row + i, 5 + j, str(table[i][j][0]))
                     self.sheet_with_judge_and_school.write(row + i, 5 + j, str(table[i][j]))
-            row += server_config.room_total + 1
+            row += self.server_config.room_total + 1
 
 
 
@@ -239,14 +241,14 @@ async def generate_counterpart_table() -> bool:
     """
     生成对阵表，返回是否成功
     """
-    if server_config is None:
+    if CounterpartTableWriter.server_config is None:
         return False
 
-    teams: List[Tuple[str, str]] = [(str(team.get("name")), str(team.get("school"))) for team in server_config.teams]
+    teams: List[Tuple[str, str]] = [(str(team.get("name")), str(team.get("school"))) for team in CounterpartTableWriter.server_config.teams]
     cur_row, cur_col = 0, 0
     writer = CounterpartTableWriter(Config.COUNTERPART_TABLE_PATH)
     tables: List[List[List[Tuple[str, str]]]] = []
-    for r in range(server_config.round_num):
+    for r in range(CounterpartTableWriter.server_config.round_num):
         table: List[List[Tuple[str, str]]] = [[], [], [], []]
         round_id = r + 1
         writer.sheet_without_judge.write(cur_row, cur_col, f"第{round_id}轮对阵表")
@@ -255,9 +257,9 @@ async def generate_counterpart_table() -> bool:
         cur_row += 1
         #? 装填
         for side in range(4):
-            for i in range(server_config.room_total):
+            for i in range(CounterpartTableWriter.server_config.room_total):
                 try:
-                    table[side].append(teams[side * server_config.room_total + i])
+                    table[side].append(teams[side * CounterpartTableWriter.server_config.room_total + i])
                 except IndexError:
                     table[side].append(("None", "None"))
             shuffle(table[side])
@@ -265,22 +267,22 @@ async def generate_counterpart_table() -> bool:
         writer.render_table(writer.sheet_without_judge, cur_row, cur_col, table, lambda x: x[0])
         writer.render_table(writer.sheet_with_judge, cur_row, cur_col, table, lambda x: x[0])
         writer.render_table(writer.sheet_with_judge_and_school, cur_row, cur_col, table, lambda x: x)
-        cur_row += server_config.room_total + 2
+        cur_row += CounterpartTableWriter.server_config.room_total + 2
         tables.append(table)
         #? 轮转队伍
-        teams = teams[server_config.room_total + 1:] + teams[:server_config.room_total + 1]
+        teams = teams[CounterpartTableWriter.server_config.room_total + 1:] + teams[:CounterpartTableWriter.server_config.room_total + 1]
     #! 生成会场裁判（完全照抄 PTAssist_Server）真的一看就很耗内存💢
     # 来个 1000 次先试试
     for i in range(1000):
         do_continue = False
         # 总轮次裁判序号: 已上场次数的字典，用于均衡全部轮次各裁判的上场次数
         judge_used_map: Dict[str, int] = {}
-        for school in server_config.judges:
-            for judge in server_config.judges[school]:
+        for school in CounterpartTableWriter.server_config.judges:
+            for judge in CounterpartTableWriter.server_config.judges[school]:
                 judge_used_map[judge] = 0
         # 本次所有生成的裁判表
         judge_tables: List[List[List[Tuple[str, str]]]] = []
-        for round_id in range(server_config.round_num):
+        for round_id in range(CounterpartTableWriter.server_config.round_num):
             team_table = tables[round_id]
             # 该轮生成的裁判表
             judge_table: List[List[Tuple[str, str]]] = []
@@ -288,7 +290,7 @@ async def generate_counterpart_table() -> bool:
             judge_used_list: List[str] = []
             # 本轮次已使用学校
             school_used_list: List[str] = []
-            for room in range(server_config.room_total):
+            for room in range(CounterpartTableWriter.server_config.room_total):
                 # 储存本会场所用裁判
                 judge_table_room: List[Tuple[str, str]] = []
                 # 参赛队伍学校名称列表
@@ -301,15 +303,15 @@ async def generate_counterpart_table() -> bool:
                     lambda x, y: x + y,
                     filter(
                         lambda x: x[1] not in team_school_names and x[0] not in judge_used_list, [
-                            [(j, school) for j in server_config.judges[school]]
-                            for school in server_config.judges.keys()
+                            [(j, school) for j in CounterpartTableWriter.server_config.judges[school]]
+                            for school in CounterpartTableWriter.server_config.judges.keys()
                         ]
                     )
                 )
-                if len(avail_judge_list) < server_config.judge_num_per_room:
+                if len(avail_judge_list) < CounterpartTableWriter.server_config.judge_num_per_room:
                     do_continue = True
                     break
-                for _ in range(server_config.judge_num_per_room):
+                for _ in range(CounterpartTableWriter.server_config.judge_num_per_room):
                     # 若之前选过同学校的老师，则人为地将其下次被选中的概率降低
                     selected_index = select_one([
                         judge_used_map[j] if s not in school_used_list else judge_used_map[j] + 5
@@ -332,7 +334,7 @@ async def generate_counterpart_table() -> bool:
     damm_it = False
     judge_tables: List[List[List[Tuple[str, str]]]] = []
     judge_used_map: Dict[str, int] = {}
-    for round_id in range(server_config.round_num):
+    for round_id in range(CounterpartTableWriter.server_config.round_num):
         team_table = tables[round_id]
         # 该轮生成的裁判表
         judge_table: List[List[Tuple[str, str]]] = []
@@ -340,7 +342,7 @@ async def generate_counterpart_table() -> bool:
         judge_used_list: List[str] = []
         # 本轮次已使用学校
         school_used_list: List[str] = []
-        for room in range(server_config.room_total):
+        for room in range(CounterpartTableWriter.server_config.room_total):
             # 储存本会场所用裁判
             judge_table_room: List[Tuple[str, str]] = []
             # 参赛队伍学校名称列表
@@ -353,15 +355,15 @@ async def generate_counterpart_table() -> bool:
                 lambda x, y: x + y,
                 filter(
                     lambda x: x[0] not in judge_used_list, [
-                        [(j, school) for j in server_config.judges[school]]
-                        for school in server_config.judges.keys()
+                        [(j, school) for j in CounterpartTableWriter.server_config.judges[school]]
+                        for school in CounterpartTableWriter.server_config.judges.keys()
                     ]
                 )
             )
-            if len(avail_judge_list) < server_config.judge_num_per_room:
+            if len(avail_judge_list) < CounterpartTableWriter.server_config.judge_num_per_room:
                 damm_it = True
                 break
-            for _ in range(server_config.judge_num_per_room):
+            for _ in range(CounterpartTableWriter.server_config.judge_num_per_room):
                 # 若之前选过同学校的老师，则人为地将其下次被选中的概率降低
                 selected_index = select_one([
                     judge_used_map[j] if s not in school_used_list else judge_used_map[j] + 5
@@ -384,7 +386,7 @@ async def generate_counterpart_table() -> bool:
     #? 裁判根本不够！允许不同会场可以重复裁判
     judge_tables: List[List[List[Tuple[str, str]]]] = []
     judge_used_map: Dict[str, int] = {}
-    for round_id in range(server_config.round_num):
+    for round_id in range(CounterpartTableWriter.server_config.round_num):
         team_table = tables[round_id]
         # 该轮生成的裁判表
         judge_table: List[List[Tuple[str, str]]] = []
@@ -392,7 +394,7 @@ async def generate_counterpart_table() -> bool:
         judge_used_list: List[str] = []
         # 本轮次已使用学校
         school_used_list: List[str] = []
-        for room in range(server_config.room_total):
+        for room in range(CounterpartTableWriter.server_config.room_total):
             # 储存本会场所用裁判
             judge_table_room: List[Tuple[str, str]] = []
             # 参赛队伍学校名称列表
@@ -403,11 +405,11 @@ async def generate_counterpart_table() -> bool:
             # 可用裁判的选择规则是 是裁判就行
             avail_judge_list: List[Tuple[str, str]] = reduce(
                 lambda x, y: x + y, [
-                    [(j, school) for j in server_config.judges[school]]
-                    for school in server_config.judges.keys()
+                    [(j, school) for j in CounterpartTableWriter.server_config.judges[school]]
+                    for school in CounterpartTableWriter.server_config.judges.keys()
                 ]
             )
-            for _ in range(server_config.judge_num_per_room):
+            for _ in range(CounterpartTableWriter.server_config.judge_num_per_room):
                 # 若之前选过同学校的老师，则人为地将其下次被选中的概率降低
                 selected_index = select_one([
                     judge_used_map[j] if s not in school_used_list else judge_used_map[j] + 5

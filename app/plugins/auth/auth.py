@@ -3,10 +3,10 @@ import time
 from math import ceil
 from base64 import b64decode
 from pydantic import BaseModel
-from fastapi import Request, Depends, status
+from fastapi import Request, Depends, Response, status
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List, Union
+from typing import Dict, List
 from random import randint
 from functools import reduce
 
@@ -412,7 +412,7 @@ async def user_search_id(id: str, request: Request, db: AsyncSession = Depends(g
 
 
 @router.get("/manage/config/template")
-async def get_config_template(request: Request, db: AsyncSession = Depends(get_db)) -> Union[JSONResponse, FileResponse]:
+async def get_config_template(request: Request, db: AsyncSession = Depends(get_db)) -> Response:
     """
     获取服务器配置模板
     """
