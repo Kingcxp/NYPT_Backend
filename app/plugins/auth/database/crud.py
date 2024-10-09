@@ -196,13 +196,12 @@ async def generate_config_template(db: AsyncSession) -> bool:
             index += 1
             sheet_team.write(index, 0, str(team.school))
             sheet_team.write(index, 1, str(team.name))
-            sheet_team.write(index, 2, str(index))
             members: List[Dict[str, str]] = str_decode(str(team.members))
             i = 0
             for member in members:
                 i += 1
-                sheet_team.write(index, 1 + i * 2, f"{i}号选手")
-                sheet_team.write(index, 2 + i * 2, member["gender"])
+                sheet_team.write(index, i * 2, f"{i}号选手")
+                sheet_team.write(index, 1 + i * 2, member["gender"])
 
         #? 裁判信息
         sheet_judge: xlwt.Worksheet = workbook.add_sheet("裁判信息")

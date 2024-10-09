@@ -1,7 +1,7 @@
 import os
 
 
-_self_path = os.path.join(
+data_folder = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "data/"
 )
@@ -10,25 +10,25 @@ _self_path = os.path.join(
 class Config:
     #! 服务器配置文件路径
     CONFIG_PATH: str = os.path.join(
-        _self_path,
-        "server_config.xlsx"
+        data_folder,
+        "server_config.xls"
     )
 
     #! 对阵表文件路径
     COUNTERPART_TABLE_PATH: str = os.path.join(
-        _self_path,
-        "counterpart_table.xlsx"
+        data_folder,
+        "counterpart_table.xls"
     )
 
     #! 服务器文件路径
     #? 临时数据存储路径
     TEMP_FOLDER: str = os.path.join(
-        _self_path,
+        data_folder,
         ".temp/"
     )
     #? 比赛数据文件路径
     MAIN_FOLDER: str = os.path.join(
-        _self_path,
+        data_folder,
         "match/"
     )
     #? 轮次文件夹路径名，跟在主文件夹之后，请使用 {id} 在字符串中标识轮次号

@@ -21,7 +21,7 @@ class Config:
     #! 配置模板存放位置
     CONFIG_TEMPLATE_PATH: str = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "config_template.xlsx"
+        "config_template.xls"
     )
 
     #! 定义配置
@@ -40,7 +40,6 @@ class Config:
     TEAMINFO_HEADERS: List[str] = [
         "学校名",
         "队伍名",
-        "抽签号",
         "队员姓名",
         "队员性别（男/女）",
         "队员姓名",

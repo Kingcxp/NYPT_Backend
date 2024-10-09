@@ -423,6 +423,6 @@ async def get_config_template(request: Request, db: AsyncSession = Depends(get_d
     await crud.generate_config_template(db)
     return FileResponse(
         path=Config.CONFIG_TEMPLATE_PATH,
-        filename="server_config.xlsx",
+        filename="config_template.xls",
         status_code=status.HTTP_200_OK,
     )

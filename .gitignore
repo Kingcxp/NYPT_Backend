@@ -11,8 +11,8 @@ flask_session/
 match/
 
 # Generated server config
-config_template.xlsx
-server_config.xlsx
+config_template.xls*
+data/
 
 # Virtual environment
 serverenv/

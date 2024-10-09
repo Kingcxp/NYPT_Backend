@@ -7,8 +7,8 @@ from fastapi import Request, Depends, Response, status, File
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from . import router, server_config
-from .config import Config
+from . import router
+from .config import Config, data_folder
 from .database import get_db, crud
 from ...manager import console
 
@@ -18,12 +18,12 @@ async def get_total_room() -> JSONResponse:
     """
     获取会场总数
     """
-    if server_config is None:
+    if crud.server_config is None:
         return JSONResponse(content={
             "msg": "配置文件尚未准备好！请联系管理员完成配置再试！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
     return JSONResponse(content={
-        "rooms": server_config.room_total,
+        "rooms": crud.server_config.room_total,
         "offset": 1
     }, status_code=status.HTTP_200_OK)
 
@@ -33,12 +33,12 @@ async def get_total_round() -> JSONResponse:
     """
     获取轮次总数
     """
-    if server_config is None:
+    if crud.server_config is None:
         return JSONResponse(content={
             "msg": "配置文件尚未准备好！请联系管理员完成配置再试！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
     return JSONResponse(content={
-        "rounds": server_config.round_num,
+        "rounds": crud.server_config.round_num,
         "offset": 1
     }, status_code=status.HTTP_200_OK)
 
@@ -57,7 +57,7 @@ async def get_roomdata(item: GetRoomdataItem, db: AsyncSession = Depends(get_db)
     """
     获取指定会场的数据
     """
-    if server_config is None:
+    if crud.server_config is None:
         return JSONResponse(content={
             "msg": "配置文件尚未准备好！请联系管理员完成配置再试！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
@@ -89,8 +89,8 @@ async def get_roomdata(item: GetRoomdataItem, db: AsyncSession = Depends(get_db)
         }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return JSONResponse(content={
         "data": file_json,
-        "rule": server_config.match_rule,
-        "match_type": server_config.match_type
+        "rule": crud.server_config.match_rule,
+        "match_type": crud.server_config.match_type
     }, status_code=status.HTTP_200_OK)
 
 
@@ -114,7 +114,7 @@ async def generate_counterpart_table(request: Request) -> Response:
         }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return FileResponse(
         path=Config.COUNTERPART_TABLE_PATH,
-        filename="counterpart_table.xlsx",
+        filename="counterpart_table.xls",
         status_code=status.HTTP_200_OK
     )
 
@@ -129,8 +129,8 @@ async def clear_rooms(request: Request, db: AsyncSession = Depends(get_db)) -> J
             "msg": "权限不足！"
         }, status_code= status.HTTP_403_FORBIDDEN)
     await crud.delete_all_rooms(db)
-    if server_config is not None:
-        await crud.create_all_rooms(db, server_config.room_total)
+    if crud.server_config is not None:
+        await crud.create_all_rooms(db, crud.server_config.room_total)
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
@@ -161,10 +161,14 @@ async def upload_config(request: Request, file: bytes = File()) -> JSONResponse:
         return JSONResponse(content={
             "msg": "权限不足！"
         }, status_code= status.HTTP_403_FORBIDDEN)
+    if not os.path.exists(data_folder):
+        os.makedirs(data_folder)
     async with aiofiles.open(Config.CONFIG_PATH, "wb") as config:
         await config.write(file)
+    if crud.server_config is None:
+        crud.server_config = crud.ServerConfigReader(Config.CONFIG_PATH)
     try:
-        server_config.update()
+        crud.server_config.update()
     except Exception:
         console.print_exception(show_locals=True)
         return JSONResponse(content={
@@ -188,6 +192,6 @@ async def download_config(request: Request) -> Response:
         }, status_code=status.HTTP_404_NOT_FOUND)
     return FileResponse(
         path=Config.CONFIG_PATH,
-        filename="server_config.xlsx",
+        filename="server_config.xls",
         status_code=status.HTTP_200_OK
     )
