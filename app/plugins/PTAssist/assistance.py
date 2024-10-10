@@ -1,8 +1,10 @@
 import os
 import aiofiles
 
-from json import loads
+from datetime import datetime
+from json import loads, dumps
 from pydantic import BaseModel
+from typing import Dict, Any
 from fastapi import Request, Depends, Response, status, File
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -94,6 +96,49 @@ async def get_roomdata(item: GetRoomdataItem, db: AsyncSession = Depends(get_db)
     }, status_code=status.HTTP_200_OK)
 
 
+class UploadRoomdataItem(BaseModel):
+    roomID: int
+    round: int
+    token: str
+    new_data: Dict[str, Any]
+
+
+@router.post("/roomdata/upload")
+async def upload_roomdata(item: UploadRoomdataItem, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    identity = request.session.get("identity")
+    if identity != "Administrator" and identity != "VolunteerA":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    try_fetch = await crud.get_room(db, item.roomID)
+    if try_fetch is None:
+        return JSONResponse(content={
+            "msg": "会场不存在！"
+        }, status_code=status.HTTP_404_NOT_FOUND)
+    if item.token != try_fetch.token:
+        return JSONResponse(content={
+            "msg": "会场令牌不正确！"
+        }, status_code=status.HTTP_400_BAD_REQUEST)
+    try:
+        filepath = os.path.join(
+            Config.TEMP_FOLDER,
+            Config.TEMP_FILE_NAME.format(
+                room_id=item.roomID,
+                round_id=item.round,
+                time_stamp=datetime.now().strftime(r"%Y-%m-%d-%H-%M-%S-%f")
+            )
+        )
+        async with aiofiles.open(filepath, "w", encoding="utf-8") as file:
+            await file.write(dumps(item.new_data))
+        return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+    except Exception as e:
+        console.print_exception(show_locals=True)
+        return JSONResponse(content={
+            "msg": "本地数据保存失败！"
+        }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 #####################
 # 用户信息后台管理 Api
 #####################
@@ -150,6 +195,27 @@ async def get_rooms_info(request: Request, db: AsyncSession = Depends(get_db)) -
             "token": room.token
         } for room in rooms]
     }, status_code=status.HTTP_200_OK)
+
+
+@router.get("/manage/rooms/table")
+async def get_rooms_table(request: Request, db: AsyncSession = Depends(get_db)) -> Response:
+    """
+    获取所有会场令牌组成的表格，用于分发
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code= status.HTTP_403_FORBIDDEN)
+    is_success = await crud.export_rooms(db)
+    if not is_success:
+        return JSONResponse(content={
+            "msg": "导出失败！"
+        }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return FileResponse(
+        path=Config.TOKEN_TABLE_PATH,
+        filename="rooms.xls",
+        status_code=status.HTTP_200_OK
+    )
 
 
 @router.post("/manage/config/upload")

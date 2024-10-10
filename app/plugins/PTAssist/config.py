@@ -8,6 +8,9 @@ data_folder = os.path.join(
 
 
 class Config:
+    #! 生成裁判表的尝试次数
+    JUDGE_GENERATE_TRY_TIMES = 1000
+
     #! 服务器配置文件路径
     CONFIG_PATH: str = os.path.join(
         data_folder,
@@ -18,6 +21,12 @@ class Config:
     COUNTERPART_TABLE_PATH: str = os.path.join(
         data_folder,
         "counterpart_table.xls"
+    )
+
+    #! 会场令牌表格文件路径
+    TOKEN_TABLE_PATH: str = os.path.join(
+        data_folder,
+        "rooms.xls"
     )
 
     #! 服务器文件路径

@@ -246,44 +246,18 @@ def select_one(count_list: List[int]) -> int:
     return len(probability_list) - 1
 
 
-async def generate_counterpart_table() -> bool:
+def try_generate_judges(
+    tables: List[List[List[Tuple[str, str]]]],
+    times: int = 1000
+) -> Tuple[List[List[List[Tuple[str, str]]]], bool]:
     """
-    生成对阵表，返回是否成功
+    尝试生成裁判表，返回是否成功
     """
     if server_config is None:
-        return False
+        return [], False
 
-    teams: List[Tuple[str, str]] = [(str(team.get("name")), str(team.get("school"))) for team in server_config.teams]
-    shuffle(teams)
-    cur_row, cur_col = 0, 0
-    writer = CounterpartTableWriter(Config.COUNTERPART_TABLE_PATH)
-    tables: List[List[List[Tuple[str, str]]]] = []
-    for r in range(server_config.round_num):
-        table: List[List[Tuple[str, str]]] = [[], [], [], []]
-        round_id = r + 1
-        writer.sheet_without_judge.write(cur_row, cur_col, f"第{round_id}轮对阵表")
-        writer.sheet_with_judge.write(cur_row, cur_col, f"第{round_id}轮对阵表")
-        writer.sheet_with_judge_and_school.write(cur_row, cur_col, f"第{round_id}轮对阵表")
-        cur_row += 1
-        #? 装填
-        for side in range(4):
-            for i in range(server_config.room_total):
-                try:
-                    table[side].append(teams[side * server_config.room_total + i])
-                except IndexError:
-                    table[side].append(("None", "None"))
-            shuffle(table[side])
-        #? 保存
-        writer.render_table(writer.sheet_without_judge, cur_row, cur_col, table, lambda x: x[0])
-        writer.render_table(writer.sheet_with_judge, cur_row, cur_col, table, lambda x: x[0])
-        writer.render_table(writer.sheet_with_judge_and_school, cur_row, cur_col, table, lambda x: str(x))
-        cur_row += server_config.room_total + 2
-        tables.append(table)
-        #? 轮转队伍
-        teams = teams[server_config.room_total + 1:] + teams[:server_config.room_total + 1]
-    #! 生成会场裁判（完全照抄 PTAssist_Server）真的一看就很耗内存💢
-    # 来个 1000 次先试试
-    for i in range(1000):
+    # 来个 time 次先试试
+    for _ in range(times):
         do_continue = False
         # 总轮次裁判序号: 已上场次数的字典，用于均衡全部轮次各裁判的上场次数
         judge_used_map: Dict[str, int] = {}
@@ -336,10 +310,19 @@ async def generate_counterpart_table() -> bool:
                 break
             judge_tables.append(judge_table)
         if not do_continue:
-            writer.render_judges(judge_tables)
-            writer.on_exit()
-            return True
-    #? 循环 1000 次都找不到合适的结果！那就可以使用同校裁判
+            return judge_tables, True
+    return [], False
+
+
+def try_generate_judges_allow_school(
+    tables: List[List[List[Tuple[str, str]]]]
+) -> Tuple[List[List[List[Tuple[str, str]]]], bool]:
+    """
+    生成裁判表并允许同校裁判，返回是否成功
+    """
+    if server_config is None:
+        return [], False
+
     damm_it = False
     judge_tables: List[List[List[Tuple[str, str]]]] = []
     judge_used_map: Dict[str, int] = {}
@@ -390,12 +373,18 @@ async def generate_counterpart_table() -> bool:
         if damm_it:
             break
         judge_tables.append(judge_table)
-    if not damm_it:
-        writer.render_judges(judge_tables)
-        writer.on_exit()
-        return True
+    return judge_tables, not damm_it
 
-    #? 裁判根本不够！允许不同会场可以重复裁判
+
+def generate_judges(
+    tables: List[List[List[Tuple[str, str]]]]
+) -> List[List[List[Tuple[str, str]]]]:
+    """
+    生成裁判表，允许同学校和不同会场重复裁判
+    """
+    if server_config is None:
+        return []
+
     judge_tables: List[List[List[Tuple[str, str]]]] = []
     judge_used_map: Dict[str, int] = {}
     for school in server_config.judges:
@@ -436,9 +425,73 @@ async def generate_counterpart_table() -> bool:
                 judge_used_map[avail_judge_list[selected_index][0]] += 1
                 avail_judge_list.pop(selected_index)
             judge_table.append(judge_table_room)
-        writer.render_judges(judge_tables)
-        writer.on_exit()
-        return True
+        judge_tables.append(judge_table)
+    return judge_tables
 
-    #! 卧槽？
-    return False
+
+async def generate_counterpart_table() -> bool:
+    """
+    生成对阵表，返回是否成功
+    """
+    if server_config is None:
+        return False
+
+    teams: List[Tuple[str, str]] = [(str(team.get("name")), str(team.get("school"))) for team in server_config.teams]
+    shuffle(teams)
+    cur_row, cur_col = 0, 0
+    writer = CounterpartTableWriter(Config.COUNTERPART_TABLE_PATH)
+    tables: List[List[List[Tuple[str, str]]]] = []
+    for r in range(server_config.round_num):
+        table: List[List[Tuple[str, str]]] = [[], [], [], []]
+        round_id = r + 1
+        writer.sheet_without_judge.write(cur_row, cur_col, f"第{round_id}轮对阵表")
+        writer.sheet_with_judge.write(cur_row, cur_col, f"第{round_id}轮对阵表")
+        writer.sheet_with_judge_and_school.write(cur_row, cur_col, f"第{round_id}轮对阵表")
+        cur_row += 1
+        #? 装填
+        for side in range(4):
+            for i in range(server_config.room_total):
+                try:
+                    table[side].append(teams[side * server_config.room_total + i])
+                except IndexError:
+                    table[side].append(("None", "None"))
+            shuffle(table[side])
+        #? 保存
+        writer.render_table(writer.sheet_without_judge, cur_row, cur_col, table, lambda x: x[0])
+        writer.render_table(writer.sheet_with_judge, cur_row, cur_col, table, lambda x: x[0])
+        writer.render_table(writer.sheet_with_judge_and_school, cur_row, cur_col, table, lambda x: str(x))
+        cur_row += server_config.room_total + 2
+        tables.append(table)
+        #? 轮转队伍
+        teams = teams[server_config.room_total + 1:] + teams[:server_config.room_total + 1]
+    #! 生成会场裁判（完全照抄 PTAssist_Server）
+    judge_tables, is_success = try_generate_judges(tables, Config.JUDGE_GENERATE_TRY_TIMES)
+    if not is_success:
+        #? 循环 time 次都找不到合适的结果！那就可以使用同校裁判
+        judge_tables, is_success = try_generate_judges_allow_school(tables)
+        if not is_success:
+            #? 裁判根本不够！允许不同会场可以重复裁判
+            judge_tables = generate_judges(tables)
+    writer.render_judges(judge_tables)
+    writer.on_exit()
+    return True
+
+
+async def export_rooms(db: AsyncSession) -> bool:
+    """
+    导出会场令牌表格，返回是否成功
+    """
+    rooms = await get_all_rooms(db)
+    workbook = xlwt.Workbook(encoding="utf-8")
+
+    sheet = workbook.add_sheet("会场 & 令牌")
+    sheet.write(0, 0, "会场编号")
+    sheet.write(0, 1, "会场令牌")
+    row = 1
+    for room in rooms:
+        sheet.write(row, 0, str(room.room_id))
+        sheet.write(row, 1, str(room.token))
+        row += 1
+
+    workbook.save(Config.TOKEN_TABLE_PATH)
+    return True
