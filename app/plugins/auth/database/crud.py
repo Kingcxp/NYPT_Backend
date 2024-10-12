@@ -152,15 +152,19 @@ async def delete_user(db: AsyncSession, user_id: int) -> bool:
     return True
 
 
-async def update_teaminfo(db: AsyncSession, user_id: int, leaders: str, members: str, contact: str) -> None:
+async def update_teaminfo(db: AsyncSession, user_id: int, leaders: str, members: str, school: str, contact: str, tel: str) -> None:
     """
     更新用户团队信息
     """
     await db.execute(update(models.User).where(models.User.user_id == user_id).values({
         models.User.leaders: leaders,
         models.User.members: members,
-        models.User.contact: contact
+        models.User.school: school,
+        models.User.contact: contact,
+        models.User.tel: tel
     }))
+    await db.commit()
+    await db.flush()
 
 
 async def generate_config_template(db: AsyncSession) -> bool:

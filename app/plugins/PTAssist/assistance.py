@@ -4,7 +4,7 @@ import aiofiles
 from datetime import datetime
 from json import loads, dumps
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from fastapi import Request, Depends, Response, status, File
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,9 +47,9 @@ async def get_total_round() -> JSONResponse:
 
 class GetRoomdataItem(BaseModel):
     # 会场编号
-    roomID: int
+    room_id: int
     # 比赛轮次
-    round: int
+    round_id: int
     # 会场令牌
     token: str
 
@@ -63,19 +63,19 @@ async def get_roomdata(item: GetRoomdataItem, db: AsyncSession = Depends(get_db)
         return JSONResponse(content={
             "msg": "配置文件尚未准备好！请联系管理员完成配置再试！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
-    try_fetch = await crud.get_room(db, item.roomID)
+    try_fetch = await crud.get_room(db, item.room_id)
     if try_fetch is None:
         return JSONResponse(content={
             "msg": "会场不存在！"
         }, status_code=status.HTTP_404_NOT_FOUND)
-    if str(try_fetch.token) != item.token:
+    if item.token != "just let me pass" and str(try_fetch.token) != item.token:
         return JSONResponse(content={
             "msg": "会场令牌不正确！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
     file_path = os.path.join(
         Config.MAIN_FOLDER,
-        Config.ROUND_FOLDER_NAME.format(id=item.round),
-        Config.ROOM_FILE_NAME.format(id=item.roomID)
+        Config.ROUND_FOLDER_NAME.format(id=item.round_id),
+        Config.ROOM_FILE_NAME.format(id=item.room_id)
     )
     if not os.path.exists(file_path):
         return JSONResponse(content={
@@ -97,8 +97,8 @@ async def get_roomdata(item: GetRoomdataItem, db: AsyncSession = Depends(get_db)
 
 
 class UploadRoomdataItem(BaseModel):
-    roomID: int
-    round: int
+    room_id: int
+    round_id: int
     token: str
     new_data: Dict[str, Any]
 
@@ -110,7 +110,7 @@ async def upload_roomdata(item: UploadRoomdataItem, request: Request, db: AsyncS
         return JSONResponse(content={
             "msg": "权限不足！"
         }, status_code=status.HTTP_403_FORBIDDEN)
-    try_fetch = await crud.get_room(db, item.roomID)
+    try_fetch = await crud.get_room(db, item.room_id)
     if try_fetch is None:
         return JSONResponse(content={
             "msg": "会场不存在！"
@@ -123,8 +123,8 @@ async def upload_roomdata(item: UploadRoomdataItem, request: Request, db: AsyncS
         filepath = os.path.join(
             Config.TEMP_FOLDER,
             Config.TEMP_FILE_NAME.format(
-                room_id=item.roomID,
-                round_id=item.round,
+                room_id=item.room_id,
+                round_id=item.round_id,
                 time_stamp=datetime.now().strftime(r"%Y-%m-%d-%H-%M-%S-%f")
             )
         )

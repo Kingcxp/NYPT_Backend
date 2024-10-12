@@ -142,7 +142,9 @@ async def team_info_fetch(request: Request, db: AsyncSession = Depends(get_db)) 
     return JSONResponse(content={
         "leaders": crud.str_decode(str(fetch_result.leaders)),
         "members": crud.str_decode(str(fetch_result.members)),
-        "contact": "" if fetch_result.contact is None else fetch_result.contact
+        "school": "" if fetch_result.school is None else fetch_result.school,
+        "contact": "" if fetch_result.contact is None else fetch_result.contact,
+        "tel": "" if fetch_result.tel is None else fetch_result.tel
     }, status_code=status.HTTP_200_OK)
 
 
@@ -153,6 +155,10 @@ class TeaminfoSaveItem(BaseModel):
     members: List[Dict[str, str]]
     # 联系方式
     contact: str
+    # 联系人电话
+    tel: str
+    # 学校名称
+    school: str
 
 
 @router.post("/teaminfo/save")
@@ -169,7 +175,15 @@ async def team_info_save(item: TeaminfoSaveItem, request: Request, db: AsyncSess
         return JSONResponse({
             "msg": "用户不存在！"
         }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    await crud.update_teaminfo(db, user_id, crud.str_encode(item.leaders), crud.str_encode(item.members), item.contact)
+    await crud.update_teaminfo(
+        db,
+        user_id,
+        crud.str_encode(item.leaders),
+        crud.str_encode(item.members),
+        item.school,
+        item.contact,
+        item.tel
+    )
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 

@@ -1,7 +1,9 @@
+import os
 import xlrd
 import xlwt
 
 from math import exp
+from shutil import rmtree
 from functools import reduce
 from sqlalchemy import select, delete
 from random import randint, shuffle, random
@@ -427,6 +429,30 @@ def generate_judges(
             judge_table.append(judge_table_room)
         judge_tables.append(judge_table)
     return judge_tables
+
+
+async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
+    """
+    生成房间数据，返回是否成功
+    """
+    if server_config is None:
+        return False
+
+    if not os.path.exists(Config.MAIN_FOLDER):
+        os.mkdir(Config.MAIN_FOLDER)
+    for r in range(server_config.round_num):
+        round_id = r + 1
+        # 创建轮次文件夹
+        folder = os.path.join(Config.MAIN_FOLDER, Config.ROUND_FOLDER_NAME.format(id=round_id))
+        if os.path.exists(folder):
+            rmtree(folder)
+        os.mkdir(folder)
+
+        for room in range(1, server_config.room_total + 1):
+            # TODO
+            pass
+
+    return True
 
 
 async def generate_counterpart_table() -> bool:
