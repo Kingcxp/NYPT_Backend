@@ -1,17 +1,20 @@
 import os
 import xlrd
 import xlwt
+import aiofiles
 
 from math import exp
+from json import dumps
 from shutil import rmtree
 from functools import reduce
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, table
 from random import randint, shuffle, random
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Iterable, Optional, List, Any, Callable, Set, Tuple, Dict
 
 from . import models, schemas
 from ..config import Config
+from ....manager import console
 
 
 def generate_password(length: int, keyring: str = "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM") -> str:
@@ -120,16 +123,22 @@ class ServerConfigReader:
         }
 
         self.teams: List[Dict[str, Any]] = []
+        self.team_by_school: Dict[str, Dict[str, Any]] = {}
         for i in range(1, team_info_sheet.nrows):
             team = team_info_sheet.row_values(i)
+            members = [{
+                "name": str(team[member]),
+                "gender": str(team[member + 1])
+            } for member in range(2, len(team), 2)]
             self.teams.append({
                 "school": str(team[0]),
                 "name": str(team[1]),
-                "members": [{
-                    "name": str(team[member]),
-                    "gender": str(team[member + 1])
-                } for member in range(2, len(team), 2)]
+                "members": members
             })
+            self.team_by_school[str(team[0])] = {
+                "name": str(team[1]),
+                "members": members
+            }
 
         self.judges: Dict[str, List[str]] = {}
         for i in range(1, judge_info_sheet.nrows):
@@ -143,7 +152,7 @@ class ServerConfigReader:
                 "school": str(question_bank[0]),
                 "name": str(question_bank[1]),
                 "bank": [
-                    int(question) for question in
+                    int(question.strip()) for question in
                     str(question_bank[2]).replace("，", ",").strip().split(",")
                 ]
             })
@@ -431,6 +440,22 @@ def generate_judges(
     return judge_tables
 
 
+async def save_json(
+    dic: Dict[str, Any],
+    path: str
+) -> bool:
+    """
+    将字典保存为文件，返回是否成功
+    """
+    try:
+        async with aiofiles.open(path, "w", encoding="utf-8") as file:
+            await file.write(dumps(dic))
+        return True
+    except Exception:
+        console.print_exception(show_locals=True)
+        return False
+
+
 async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
     """
     生成房间数据，返回是否成功
@@ -438,21 +463,36 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
     if server_config is None:
         return False
 
-    if not os.path.exists(Config.MAIN_FOLDER):
-        os.mkdir(Config.MAIN_FOLDER)
-    for r in range(server_config.round_num):
-        round_id = r + 1
-        # 创建轮次文件夹
-        folder = os.path.join(Config.MAIN_FOLDER, Config.ROUND_FOLDER_NAME.format(id=round_id))
-        if os.path.exists(folder):
-            rmtree(folder)
-        os.mkdir(folder)
+    try:
+        if not os.path.exists(Config.MAIN_FOLDER):
+            os.mkdir(Config.MAIN_FOLDER)
+        for r in range(server_config.round_num):
+            # 创建轮次文件夹
+            folder = os.path.join(Config.MAIN_FOLDER, Config.ROUND_FOLDER_NAME.format(id=r+1))
+            if os.path.exists(folder):
+                rmtree(folder)
+            os.mkdir(folder)
 
-        for room in range(1, server_config.room_total + 1):
-            # TODO
-            pass
-
-    return True
+            for room in range(server_config.room_total):
+                room_json: Dict[str, Any] = {
+                    "teamDataList": [],
+                    "questionMap": []
+                }
+                for side in range(4):
+                    room_json["teamDataList"].append({
+                        "name": tables[r][side][room][0],
+                        "school": tables[r][side][room][1],
+                        "playerDataList": [],
+                        "recordDataList": []
+                    })
+                    for player in server_config.team_by_school[tables[r][side][room][1]]["members"]:
+                        room_json["teamDataList"]["playerDataList"].append(player)
+                    # TODO: 根据规则添加赛题忽略
+                await save_json(room_json, os.path.join(folder, Config.ROOM_FILE_NAME.format(id=room+1)))
+        return True
+    except Exception:
+        console.print_exception(show_locals=True)
+        return False
 
 
 async def generate_counterpart_table() -> bool:
@@ -469,10 +509,9 @@ async def generate_counterpart_table() -> bool:
     tables: List[List[List[Tuple[str, str]]]] = []
     for r in range(server_config.round_num):
         table: List[List[Tuple[str, str]]] = [[], [], [], []]
-        round_id = r + 1
-        writer.sheet_without_judge.write(cur_row, cur_col, f"第{round_id}轮对阵表")
-        writer.sheet_with_judge.write(cur_row, cur_col, f"第{round_id}轮对阵表")
-        writer.sheet_with_judge_and_school.write(cur_row, cur_col, f"第{round_id}轮对阵表")
+        writer.sheet_without_judge.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
+        writer.sheet_with_judge.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
+        writer.sheet_with_judge_and_school.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
         cur_row += 1
         #? 装填
         for side in range(4):
