@@ -145,17 +145,16 @@ class ServerConfigReader:
             school_judges = judge_info_sheet.row_values(i)
             self.judges[str(school_judges[0])] = [str(judge) for judge in school_judges[1:] if str(judge).strip() != ""]
 
-        self.question_banks: List[Dict[str, Any]] = []
+        self.question_banks: Dict[str, Dict[str, Any]] = {}
         for i in range(1, team_question_bank_sheet.nrows):
             question_bank = team_question_bank_sheet.row_values(i)
-            self.question_banks.append({
+            self.question_banks[str(question_bank[1])] = {
                 "school": str(question_bank[0]),
-                "name": str(question_bank[1]),
                 "bank": [
-                    int(question.strip()) for question in
+                    question.strip() for question in
                     str(question_bank[2]).replace("，", ",").strip().split(",")
                 ]
-            })
+            }
 
         workbook.release_resources()
 
@@ -487,7 +486,19 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
                     })
                     for player in server_config.team_by_school[tables[r][side][room][1]]["members"]:
                         room_json["teamDataList"]["playerDataList"].append(player)
-                    # TODO: 根据规则添加赛题忽略
+                    for question in server_config.problem_set.keys():
+                        if question in server_config.question_banks[tables[r][side][room][0]]["bank"]:
+                            continue
+                        room_json["teamDataList"][side]["recordDataList"].append({
+                            "round": 0,
+                            "phase": 0,
+                            "roomID": 0,
+                            "questionID": question,
+                            "masterID": 0,
+                            "role": "B",
+                            "score": 0.0,
+                            "weight": 0.0
+                        })
                 await save_json(room_json, os.path.join(folder, Config.ROOM_FILE_NAME.format(id=room+1)))
         return True
     except Exception:
