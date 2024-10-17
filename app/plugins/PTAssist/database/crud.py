@@ -467,24 +467,23 @@ async def regenerate_room_data() -> bool:
     try:
         async with aiofiles.open(os.path.join(data_folder, "data.json"), "r", encoding="utf-8") as file:
             data_json = loads(await file.read())
-        for r in range(server_config.round_num):
-            folder = os.path.join(Config.MAIN_FOLDER, Config.ROUND_FOLDER_NAME.format(id=r+1))
-            if not os.path.exists(folder):
-                return False
+        folder = os.path.join(Config.MAIN_FOLDER, Config.ROUND_FOLDER_NAME.format(id=1))
+        if not os.path.exists(folder):
+            return False
 
-            for room in range(server_config.room_total):
-                filename = os.path.join(folder, Config.ROOM_FILE_NAME.format(id=room+1))
-                if not os.path.exists(filename):
-                    return False
-                async with aiofiles.open(filename, "r", encoding="utf-8") as file:
-                    room_json = loads(await file.read())
-                room_team_data = room_json["teamDataList"]
-                room_json["teamDataList"] = []
-                for team_data in room_team_data:
-                    for team in data_json["teamDataList"]:
-                        if team["name"] == team_data["name"]:
-                            room_json["teamDataList"].append(team)
-                            break
+        for room in range(server_config.room_total):
+            filename = os.path.join(folder, Config.ROOM_FILE_NAME.format(id=room+1))
+            if not os.path.exists(filename):
+                return False
+            async with aiofiles.open(filename, "r", encoding="utf-8") as file:
+                room_json = loads(await file.read())
+            room_team_data = room_json["teamDataList"]
+            room_json["teamDataList"] = []
+            for team_data in room_team_data:
+                for team in data_json["teamDataList"]:
+                    if team["name"] == team_data["name"]:
+                        room_json["teamDataList"].append(team)
+                        break
     except Exception:
         console.print_exception(show_locals=True)
         return False
@@ -547,9 +546,11 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
                             "score": 0.0,
                             "weight": 0.0
                         })
-                data_json["teamDataList"] += room_json["teamDataList"]
+                if r == 0:
+                    data_json["teamDataList"] += room_json["teamDataList"]
                 await save_json(room_json, os.path.join(folder, Config.ROOM_FILE_NAME.format(id=room+1)))
-            await save_json(data_json, os.path.join(data_folder, "data.json"))
+            if r == 0:
+                await save_json(data_json, os.path.join(data_folder, "data.json"))
         return True
     except Exception:
         console.print_exception(show_locals=True)
