@@ -4,16 +4,16 @@ import xlwt
 import aiofiles
 
 from math import exp
-from json import dumps
 from shutil import rmtree
 from functools import reduce
-from sqlalchemy import select, delete, table
+from json import dumps, loads
+from sqlalchemy import select, delete
 from random import randint, shuffle, random
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Iterable, Optional, List, Any, Callable, Set, Tuple, Dict
 
 from . import models, schemas
-from ..config import Config
+from ..config import Config, data_folder
 from ....manager import console
 
 
@@ -448,11 +448,48 @@ async def save_json(
     """
     try:
         async with aiofiles.open(path, "w", encoding="utf-8") as file:
-            await file.write(dumps(dic))
+            await file.write(dumps(dic, indent=4, ensure_ascii=False))
         return True
     except Exception:
         console.print_exception(show_locals=True)
         return False
+
+
+async def regenerate_room_data() -> bool:
+    """
+    根据已经存在的 data.json 重新覆盖房间数据，返回是否成功
+    """
+    if server_config is None:
+        return False
+    if not os.path.exists(os.path.join(data_folder, "data.json")):
+        return False
+
+    try:
+        async with aiofiles.open(os.path.join(data_folder, "data.json"), "r", encoding="utf-8") as file:
+            data_json = loads(await file.read())
+        for r in range(server_config.round_num):
+            folder = os.path.join(Config.MAIN_FOLDER, Config.ROUND_FOLDER_NAME.format(id=r+1))
+            if not os.path.exists(folder):
+                return False
+
+            for room in range(server_config.room_total):
+                filename = os.path.join(folder, Config.ROOM_FILE_NAME.format(id=room+1))
+                if not os.path.exists(filename):
+                    return False
+                async with aiofiles.open(filename, "r", encoding="utf-8") as file:
+                    room_json = loads(await file.read())
+                room_team_data = room_json["teamDataList"]
+                room_json["teamDataList"] = []
+                for team_data in room_team_data:
+                    for team in data_json["teamDataList"]:
+                        if team["name"] == team_data["name"]:
+                            room_json["teamDataList"].append(team)
+                            break
+    except Exception:
+        console.print_exception(show_locals=True)
+        return False
+
+    return True
 
 
 async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
@@ -465,6 +502,15 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
     try:
         if not os.path.exists(Config.MAIN_FOLDER):
             os.mkdir(Config.MAIN_FOLDER)
+        # 总 data.json 内容
+        data_json: Dict[str, Any] = {
+            "teamDataList": [],
+            "questionMap": server_config.problem_set,
+            "schoolMap": {
+                str(i+1): v for i, v
+                in enumerate(server_config.team_by_school.keys())
+            }
+        }
         for r in range(server_config.round_num):
             # 创建轮次文件夹
             folder = os.path.join(Config.MAIN_FOLDER, Config.ROUND_FOLDER_NAME.format(id=r+1))
@@ -475,9 +521,11 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
             for room in range(server_config.room_total):
                 room_json: Dict[str, Any] = {
                     "teamDataList": [],
-                    "questionMap": []
+                    "questionMap": server_config.problem_set
                 }
                 for side in range(4):
+                    if tables[r][side][room][1] == "None":
+                        continue
                     room_json["teamDataList"].append({
                         "name": tables[r][side][room][0],
                         "school": tables[r][side][room][1],
@@ -485,7 +533,7 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
                         "recordDataList": []
                     })
                     for player in server_config.team_by_school[tables[r][side][room][1]]["members"]:
-                        room_json["teamDataList"]["playerDataList"].append(player)
+                        room_json["teamDataList"][side]["playerDataList"].append(player)
                     for question in server_config.problem_set.keys():
                         if question in server_config.question_banks[tables[r][side][room][0]]["bank"]:
                             continue
@@ -499,7 +547,9 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
                             "score": 0.0,
                             "weight": 0.0
                         })
+                data_json["teamDataList"] += room_json["teamDataList"]
                 await save_json(room_json, os.path.join(folder, Config.ROOM_FILE_NAME.format(id=room+1)))
+            await save_json(data_json, os.path.join(data_folder, "data.json"))
         return True
     except Exception:
         console.print_exception(show_locals=True)
@@ -548,6 +598,9 @@ async def generate_counterpart_table() -> bool:
         if not is_success:
             #? 裁判根本不够！允许不同会场可以重复裁判
             judge_tables = generate_judges(tables)
+    #! 生成会场信息
+    if not await generate_room_data(tables):
+        return False
     writer.render_judges(judge_tables)
     writer.on_exit()
     return True
