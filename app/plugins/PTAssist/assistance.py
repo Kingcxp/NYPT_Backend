@@ -4,7 +4,7 @@ import aiofiles
 from datetime import datetime
 from json import loads, dumps
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from fastapi import Request, Depends, Response, status, File
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -251,7 +251,7 @@ async def download_config(request: Request) -> Response:
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
             "msg": "权限不足！"
-        }, status_code= status.HTTP_403_FORBIDDEN)
+        }, status_code=status.HTTP_403_FORBIDDEN)
     if not os.path.exists(Config.CONFIG_PATH):
         return JSONResponse(content={
             "msg": "配置文件不存在！"
@@ -261,3 +261,24 @@ async def download_config(request: Request) -> Response:
         filename="server_config.xls",
         status_code=status.HTTP_200_OK
     )
+
+
+@router.get("/manage/rooms/data")
+async def get_data(request: Request) -> JSONResponse:
+    """
+    获取比赛总数据 data.json
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    filepath = os.path.join(data_folder, "data.json")
+    if not os.path.exists(filepath):
+        return JSONResponse(content={
+            "msg": "数据文件不存在！"
+        }, status_code=status.HTTP_404_NOT_FOUND)
+    async with aiofiles.open(filepath, "r", encoding="utf-8") as data_file:
+        return JSONResponse(
+            content=loads(await data_file.read()),
+            status_code=status.HTTP_200_OK
+        )
