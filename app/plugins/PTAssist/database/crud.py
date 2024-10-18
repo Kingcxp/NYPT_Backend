@@ -533,6 +533,8 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
                     })
                     for player in server_config.team_by_school[tables[r][side][room][1]]["members"]:
                         room_json["teamDataList"][side]["playerDataList"].append(player)
+                    if server_config.question_banks.get(tables[r][side][room][0]) is None:
+                        continue
                     for question in server_config.problem_set.keys():
                         if question in server_config.question_banks[tables[r][side][room][0]]["bank"]:
                             continue
