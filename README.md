@@ -6,7 +6,7 @@
 TODO
 
 ## 运行项目测试服务器
-首先，你需要自行安装 git 版本控制工具、 python>=3.10（低于该版本没试过，如可行也可）以及对应的 pip3 包管理器
+首先，你需要自行安装 git 版本控制工具、 python >= 3.10（低于该版本没试过，如可行也可）以及对应的 pip3 包管理器
 之后，使用接下来的一连串命令来安装项目依赖：
 ```sh
 git clone https://github.com/Kingcq/NYPT_Frontend.git
@@ -43,10 +43,12 @@ uvicorn app:app --host 0.0.0.0 --port 8081 --reload
 # 如果你觉得 watchdog 一检测到文件就重启太烦了，你可以去掉 --reload 参数
 ```
 之后，你可以在浏览器中访问 [http://localhost:8081/docs](http://localhost:8081/docs) 来查看项目 api 文档
+
 如果你同时打开了前端测试服务器，它默认开启了反向代理，你也能通过 [http://localhost:5173/api/docs](http://localhost:5173/api/docs) 访问到同样的页面
 
 ## 关于 `.env` 文件配置
 .env 文件目前包含邮箱配置和管理员密码配置两部分
+
 当创建 .env 之后，我们希望看到类似如下内容：
 ```sh
 # 当初始化用户数据库时，会自动创建第一个管理员账号，密码为这个环境变量设置的内容
