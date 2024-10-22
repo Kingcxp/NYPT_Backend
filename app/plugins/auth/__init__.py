@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter
 from typing import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -16,7 +18,7 @@ async def init_db(_: APIRouter) -> AsyncGenerator[None, None]:
             await crud.create_user(db, schemas.UserCreate(
                 name="Admin",
                 identity="Administrator",
-                token="adminpass",
+                token=os.getenv("ADMIN_PASSWORD") or "adminpass",
                 email=None
             ))
     yield

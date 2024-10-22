@@ -32,7 +32,7 @@ source serverenv/bin/activate.fish
 touch .env
 vi .env
 # .env
-# EMAIL="your_email@address.com" 如 123456789@163.com
+# EMAIL="your_email@address.com" # 如 123456789@163.com
 # EMAIL_PASSKEY="your_smtp_passkey"
 # EMAIL_HOST="your_smtp_host" # 如 smtp.163.com
 
@@ -44,3 +44,23 @@ uvicorn app:app --host 0.0.0.0 --port 8081 --reload
 ```
 之后，你可以在浏览器中访问 [http://localhost:8081/docs](http://localhost:8081/docs) 来查看项目 api 文档
 如果你同时打开了前端测试服务器，它默认开启了反向代理，你也能通过 [http://localhost:5173/api/docs](http://localhost:5173/api/docs) 访问到同样的页面
+
+## 关于 `.env` 文件配置
+.env 文件目前包含邮箱配置和管理员密码配置两部分
+当创建 .env 之后，我们希望看到类似如下内容：
+```sh
+# 当初始化用户数据库时，会自动创建第一个管理员账号，密码为这个环境变量设置的内容
+ADMIN_PASSWORD="adminpass"
+
+# 邮箱配置，如果你想要启用发送邮件的功能，你必须配置这个内容
+EMAIL="your_email@address.com"
+EMAIL_PASSKEY="your_smtp_passkey"
+EMAIL_HOST="your_smtp_host"
+```
+
+## 关于其他插件可能需要修改的地方
+### 1. PTAssist(app/plugins/PTAssist)
+在 PTAssist 插件中，你需要修改 `config.py` 文件中的一些常量变量，使其指向你想要的存放比赛规则模板的路径
+
+### 2. notice(app/plugins/notice)
+在 notice 插件中，你需要修改 `notices/` 文件夹下的文件，依照 `notice{id}.html` 的格式一次编写 `.html` 文件，它会被按照顺序检测为首页的公告版面，编号从 `1` 开始，如果跳过某个编号，则之后的公告会被忽略
