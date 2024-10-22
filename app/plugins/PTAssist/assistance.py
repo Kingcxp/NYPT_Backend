@@ -131,7 +131,7 @@ async def upload_roomdata(item: UploadRoomdataItem, request: Request, db: AsyncS
         async with aiofiles.open(filepath, "w", encoding="utf-8") as file:
             await file.write(dumps(item.new_data))
         return JSONResponse(content={}, status_code=status.HTTP_200_OK)
-    except Exception as e:
+    except Exception:
         console.print_exception(show_locals=True)
         return JSONResponse(content={
             "msg": "本地数据保存失败！"
@@ -278,7 +278,23 @@ async def get_data(request: Request) -> JSONResponse:
             "msg": "数据文件不存在！"
         }, status_code=status.HTTP_404_NOT_FOUND)
     async with aiofiles.open(filepath, "r", encoding="utf-8") as data_file:
-        return JSONResponse(
-            content=loads(await data_file.read()),
-            status_code=status.HTTP_200_OK
-        )
+        data = await data_file.read()
+    return JSONResponse(
+        content=loads(data),
+        status_code=status.HTTP_200_OK
+    )
+
+
+@router.post("/manage/rooms/data/upload")
+async def upload_data_json(data: Dict[str, Any], request: Request) -> JSONResponse:
+    """
+    上传比赛总数据 data.json
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code= status.HTTP_403_FORBIDDEN)
+    filepath = os.path.join(data_folder, "data.json")
+    async with aiofiles.open(filepath, "w", encoding="utf-8") as data_file:
+        await data_file.write(dumps(data, indent=4, ensure_ascii=False))
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
