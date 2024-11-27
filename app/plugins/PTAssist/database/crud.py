@@ -118,8 +118,8 @@ class ServerConfigReader:
 
         problem_set = problem_set_sheet.col_values(1)
         self.problem_set: Dict[str, str] = {
-            str(i): str(problem_set[i - 1])
-            for i in range(1, len(problem_set) + 1)
+            str(i): str(problem_set[i])
+            for i in range(1, len(problem_set))
         }
 
         self.teams: List[Dict[str, Any]] = []
