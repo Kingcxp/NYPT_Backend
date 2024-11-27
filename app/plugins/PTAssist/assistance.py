@@ -125,7 +125,7 @@ async def upload_roomdata(item: UploadRoomdataItem, request: Request, db: AsyncS
             Config.TEMP_FILE_NAME.format(
                 room_id=item.room_id,
                 round_id=item.round_id,
-                time_stamp=datetime.now().strftime(r"%Y-%m-%d-%H-%M-%S-%f")
+                timestamp=datetime.now().strftime(r"%Y-%m-%d-%H-%M-%S-%f")
             )
         )
         async with aiofiles.open(filepath, "w", encoding="utf-8") as file:
