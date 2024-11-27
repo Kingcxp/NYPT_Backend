@@ -120,6 +120,8 @@ async def upload_roomdata(item: UploadRoomdataItem, request: Request, db: AsyncS
             "msg": "会场令牌不正确！"
         }, status_code=status.HTTP_400_BAD_REQUEST)
     try:
+        if not os.path.exists(Config.TEMP_FOLDER):
+            os.makedirs(Config.TEMP_FOLDER)
         filepath = os.path.join(
             Config.TEMP_FOLDER,
             Config.TEMP_FILE_NAME.format(
