@@ -4,7 +4,7 @@ import aiofiles
 from datetime import datetime
 from json import loads, dumps
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, List
 from fastapi import Request, Depends, Response, status, File
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -125,9 +125,9 @@ async def upload_roomdata(item: UploadRoomdataItem, request: Request, db: AsyncS
         filepath = os.path.join(
             Config.TEMP_FOLDER,
             Config.TEMP_FILE_NAME.format(
-                room_id=item.room_id,
-                round_id=item.round_id,
-                timestamp=datetime.now().strftime(r"%Y-%m-%d-%H-%M-%S-%f")
+                room_id=f"Room{item.room_id}",
+                round_id=f"Round{item.round_id}",
+                time_info=datetime.now().strftime(r"%Y-%m-%d-%H-%M-%S-%f")
             )
         )
         async with aiofiles.open(filepath, "w", encoding="utf-8") as file:
@@ -153,7 +153,7 @@ async def generate_counterpart_table(request: Request) -> Response:
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
             "msg": "权限不足！"
-        }, status_code= status.HTTP_403_FORBIDDEN)
+        }, status_code=status.HTTP_403_FORBIDDEN)
     if not await crud.generate_counterpart_table():
         return JSONResponse(content={
             "msg": "生成失败！"
@@ -173,7 +173,7 @@ async def clear_rooms(request: Request, db: AsyncSession = Depends(get_db)) -> J
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
             "msg": "权限不足！"
-        }, status_code= status.HTTP_403_FORBIDDEN)
+        }, status_code=status.HTTP_403_FORBIDDEN)
     await crud.delete_all_rooms(db)
     if crud.server_config is not None:
         await crud.create_all_rooms(db, crud.server_config.room_total)
@@ -188,7 +188,7 @@ async def get_rooms_info(request: Request, db: AsyncSession = Depends(get_db)) -
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
             "msg": "权限不足！"
-        }, status_code= status.HTTP_403_FORBIDDEN)
+        }, status_code=status.HTTP_403_FORBIDDEN)
     rooms = await crud.get_all_rooms(db)
     return JSONResponse(content={
         "rooms": [{
@@ -206,7 +206,7 @@ async def get_rooms_table(request: Request, db: AsyncSession = Depends(get_db)) 
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
             "msg": "权限不足！"
-        }, status_code= status.HTTP_403_FORBIDDEN)
+        }, status_code=status.HTTP_403_FORBIDDEN)
     is_success = await crud.export_rooms(db)
     if not is_success:
         return JSONResponse(content={
@@ -227,7 +227,7 @@ async def upload_config(request: Request, file: bytes = File()) -> JSONResponse:
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
             "msg": "权限不足！"
-        }, status_code= status.HTTP_403_FORBIDDEN)
+        }, status_code=status.HTTP_403_FORBIDDEN)
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
     async with aiofiles.open(Config.CONFIG_PATH, "wb") as config:
@@ -294,8 +294,114 @@ async def upload_data_json(data: Dict[str, Any], request: Request) -> JSONRespon
     if request.session.get("identity") != "Administrator":
         return JSONResponse(content={
             "msg": "权限不足！"
-        }, status_code= status.HTTP_403_FORBIDDEN)
+        }, status_code=status.HTTP_403_FORBIDDEN)
     filepath = os.path.join(data_folder, "data.json")
     async with aiofiles.open(filepath, "w", encoding="utf-8") as data_file:
         await data_file.write(dumps(data, indent=4, ensure_ascii=False))
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
+class ScoringItem(BaseModel):
+    room_id: str
+    round_id: str
+    time_info: str
+
+
+@router.get("/manage/scoring/list")
+async def list_scoring_files(request: Request) -> JSONResponse:
+    """
+    获取 .temp 文件夹中所有文件信息
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    result: List[Dict[str, str]] = []
+    filenames = os.listdir(Config.TEMP_FOLDER)
+    for file in filenames:
+        room_id, round_id, time_info = file.replace(".xls", "").split("-")
+        result.append({
+            "room_id": room_id,
+            "round_id": round_id,
+            "time_info": time_info
+        })
+    return JSONResponse(content=result, status_code=status.HTTP_200_OK)
+
+
+@router.get("/manage/scoring/remove")
+async def remove_scoring_files(item: ScoringItem, request: Request) -> JSONResponse:
+    """
+    删除 .temp 文件夹中的某个文件
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    filename = os.path.join(
+        Config.TEMP_FOLDER,
+        Config.TEMP_FILE_NAME.format(
+            room_id=item.room_id,
+            round_id=item.round_id,
+            time_info=item.time_info
+        )
+    )
+    if not os.path.exists(filename):
+        return JSONResponse(content={
+            "msg": "文件未找到！"
+        }, status_code= status.HTTP_404_NOT_FOUND)
+    os.remove(filename)
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/manage/scoring/merge")
+async def merge_scoring_files(item: ScoringItem, request: Request) -> JSONResponse:
+    """
+    合并 .temp 文件夹中的某个文件
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    filename = os.path.join(
+        Config.TEMP_FOLDER,
+        Config.TEMP_FILE_NAME.format(
+            room_id=item.room_id,
+            round_id=item.round_id,
+            time_info=item.time_info
+        )
+    )
+    if not os.path.exists(filename):
+        return JSONResponse(content={
+            "msg": "文件未找到！"
+        }, status_code= status.HTTP_404_NOT_FOUND)
+    # TODO: 合并文件到 data.json
+    os.remove(filename)
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/manage/scoring/download")
+async def download_scoring_files(item: ScoringItem, request: Request) -> Response:
+    """
+    下载 .temp 文件夹中 的某个文件
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    filename = os.path.join(
+        Config.TEMP_FOLDER,
+        Config.TEMP_FILE_NAME.format(
+            room_id=item.room_id,
+            round_id=item.round_id,
+            time_info=item.time_info
+        )
+    )
+    if not os.path.exists(filename):
+        return JSONResponse(content={
+            "msg": "文件未找到！"
+        }, status_code= status.HTTP_404_NOT_FOUND)
+    return FileResponse(
+        path=filename,
+        filename=filename,
+        status_code=status.HTTP_200_OK
+    )

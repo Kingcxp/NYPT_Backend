@@ -45,7 +45,7 @@ class Config:
     #? 会场文件路径名，跟在轮次文件夹之后，请使用 {id} 在字符串中标识房间号
     ROOM_FILE_NAME: str = "Room{id}.json"
     #? 接收到的临时文件名，请使用 {round_id} 标识轮次号，{room_id} 标识房间号，{time_stamp} 标识时间戳
-    TEMP_FILE_NAME: str = "Round{round_id}-Room{room_id}-{timestamp}.json"
+    TEMP_FILE_NAME: str = "{room_id}-{round_id}-{time_info}.json"
 
     #! 配置表名
     SOFTWARE_CONFIG_SHEET_NAME = "软件配置"

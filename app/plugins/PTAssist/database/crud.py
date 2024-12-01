@@ -627,3 +627,19 @@ async def export_rooms(db: AsyncSession) -> bool:
 
     workbook.save(Config.TOKEN_TABLE_PATH)
     return True
+
+
+async def merge_data(filename: str) -> None:
+    """
+    将 filename 中的数据合并到 data.json 中
+    """
+    dataname = os.path.join(data_folder, "data.json")
+    if not os.path.exists(dataname):
+        return
+    if not os.path.exists(filename):
+        return
+    async with aiofiles.open(dataname, "r") as f:
+        data_json = loads(await f.read())
+    async with aiofiles.open(filename, "r") as f:
+        new_data = loads(await f.read())
+    data_json.update
