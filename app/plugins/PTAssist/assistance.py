@@ -331,7 +331,7 @@ async def list_scoring_files(request: Request) -> JSONResponse:
     return JSONResponse(content={"files": result}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/manage/scoring/remove")
+@router.post("/manage/scoring/remove")
 async def remove_scoring_files(item: ScoringItem, request: Request) -> JSONResponse:
     """
     删除 .temp 文件夹中的某个文件
@@ -356,7 +356,7 @@ async def remove_scoring_files(item: ScoringItem, request: Request) -> JSONRespo
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/manage/scoring/merge")
+@router.post("/manage/scoring/merge")
 async def merge_scoring_files(item: ScoringItem, request: Request) -> JSONResponse:
     """
     合并 .temp 文件夹中的某个文件
@@ -382,7 +382,7 @@ async def merge_scoring_files(item: ScoringItem, request: Request) -> JSONRespon
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/manage/scoring/download")
+@router.post("/manage/scoring/download")
 async def download_scoring_files(item: ScoringItem, request: Request) -> Response:
     """
     下载 .temp 文件夹中 的某个文件
