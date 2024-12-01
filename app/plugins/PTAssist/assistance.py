@@ -374,7 +374,7 @@ async def merge_scoring_files(item: ScoringItem, request: Request) -> JSONRespon
         return JSONResponse(content={
             "msg": "文件未找到！"
         }, status_code= status.HTTP_404_NOT_FOUND)
-    # TODO: 合并文件到 data.json
+    await crud.merge_data(filename)
     os.remove(filename)
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 

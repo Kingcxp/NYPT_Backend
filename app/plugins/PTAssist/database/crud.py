@@ -168,7 +168,7 @@ class CounterpartTableWriter:
     """
     def __init__(self, path: str) -> None:
         self.path = path
-        with open(self.path, "w"):
+        with open(self.path, "w", encoding="utf-8"):
             pass
 
         self.workbook: xlwt.Workbook = xlwt.Workbook(encoding="utf-8")
@@ -638,8 +638,21 @@ async def merge_data(filename: str) -> None:
         return
     if not os.path.exists(filename):
         return
-    async with aiofiles.open(dataname, "r") as f:
+    async with aiofiles.open(dataname, "r", encoding="utf-8") as f:
         data_json = loads(await f.read())
-    async with aiofiles.open(filename, "r") as f:
+    async with aiofiles.open(filename, "r", encoding="utf-8") as f:
         new_data = loads(await f.read())
-    data_json.update
+    for item in new_data["teamDataList"]:
+        for data_item in data_json["teamDataList"]:
+            if item["name"] == data_item["name"]:
+                for record in item["recordDataList"]:
+                    found = False
+                    for data_record in data_item["recordDataList"]:
+                        if record == data_record:
+                            found = True
+                            break
+                    if not found:
+                        data_item["recordDataList"].append(record)
+                break
+    async with aiofiles.open(dataname, "w", encoding="utf-8") as f:
+        await f.write(dumps(data_json, ensure_ascii=False, indent=4))
