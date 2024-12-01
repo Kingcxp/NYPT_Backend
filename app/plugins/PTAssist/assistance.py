@@ -317,6 +317,8 @@ async def list_scoring_files(request: Request) -> JSONResponse:
             "msg": "权限不足！"
         }, status_code=status.HTTP_403_FORBIDDEN)
     result: List[Dict[str, str]] = []
+    if not os.path.exists(Config.TEMP_FOLDER):
+        os.makedirs(Config.TEMP_FOLDER)
     filenames = os.listdir(Config.TEMP_FOLDER)
     for file in filenames:
         room_id, round_id, time_info = file.replace(".xls", "").split("-")
