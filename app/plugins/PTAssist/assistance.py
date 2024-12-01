@@ -330,7 +330,7 @@ async def list_scoring_files(request: Request) -> JSONResponse:
             "round_id": round_id,
             "time_info": time_info
         })
-    return JSONResponse(content={"files": result}, status_code=status.HTTP_200_OK)
+    return JSONResponse(content={"files": sorted(result, key=lambda x: (x["room_id"], x["round_id"]))}, status_code=status.HTTP_200_OK)
 
 
 @router.post("/manage/scoring/remove")
