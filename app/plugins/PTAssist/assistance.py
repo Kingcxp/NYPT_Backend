@@ -322,7 +322,7 @@ async def list_scoring_files(request: Request) -> JSONResponse:
     filenames = os.listdir(Config.TEMP_FOLDER)
     for file in filenames:
         name_parts = file.replace(".json", "").split("-")
-        room_id, round_id, time_info = name_parts[0], name_parts[1], "-".join(name_parts[2:-1])
+        room_id, round_id, time_info = name_parts[0], name_parts[1], "-".join(name_parts[2:])
         result.append({
             "room_id": room_id,
             "round_id": round_id,
