@@ -133,7 +133,7 @@ async def upload_roomdata(item: UploadRoomdataItem, request: Request, db: AsyncS
         for key in item.new_data["questionMap"].keys():
             item.new_data["questionMap"][key] = item.new_data["questionMap"][key].replace("[!Disabled]", "")
         async with aiofiles.open(filepath, "w", encoding="utf-8") as file:
-            await file.write(dumps(item.new_data))
+            await file.write(dumps(item.new_data, indent=4, ensure_ascii=False))
         return JSONResponse(content={}, status_code=status.HTTP_200_OK)
     except Exception:
         console.print_exception(show_locals=True)
