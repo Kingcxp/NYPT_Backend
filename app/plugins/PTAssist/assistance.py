@@ -127,7 +127,7 @@ async def upload_roomdata(item: UploadRoomdataItem, request: Request, db: AsyncS
             Config.TEMP_FILE_NAME.format(
                 room_id=f"Room{item.room_id}",
                 round_id=f"Round{item.round_id}",
-                time_info=datetime.now().strftime(r"%Y-%m-%d-%H-%M:%S:%f")
+                time_info=datetime.now().strftime(r"%Y-%m-%d__%H-%M-%S__%f")
             )
         )
         for key in item.new_data["questionMap"].keys():
