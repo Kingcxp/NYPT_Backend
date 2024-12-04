@@ -127,6 +127,7 @@ class ServerConfigReader:
         for i in range(1, team_info_sheet.nrows):
             team = team_info_sheet.row_values(i)
             members = [{
+                "id": member // 2,
                 "name": str(team[member]),
                 "gender": str(team[member + 1])
             } for member in range(2, len(team), 2)]
