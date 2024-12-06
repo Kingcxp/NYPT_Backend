@@ -267,14 +267,10 @@ async def download_config(request: Request) -> Response:
 
 
 @router.get("/manage/rooms/data")
-async def get_data(request: Request) -> JSONResponse:
+async def get_data() -> JSONResponse:
     """
     获取比赛总数据 data.json
     """
-    if request.session.get("identity") != "Administrator":
-        return JSONResponse(content={
-            "msg": "权限不足！"
-        }, status_code=status.HTTP_403_FORBIDDEN)
     filepath = os.path.join(data_folder, "data.json")
     if not os.path.exists(filepath):
         return JSONResponse(content={
