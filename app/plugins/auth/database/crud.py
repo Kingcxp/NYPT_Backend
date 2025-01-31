@@ -229,3 +229,14 @@ async def generate_config_template(db: AsyncSession) -> bool:
         return True
     finally:
         return False
+
+
+async def upload_user_award(db: AsyncSession, file: bytes) -> None:
+    """上传获奖信息"""
+    img_str = b64encode(file).decode('utf-8')
+    img_str = "data:image/png;base64," + img_str
+    await db.execute(update(models.User).where(models.User.user_id == 1).values({
+        models.User.award: img_str
+    }))
+    await db.commit()
+    await db.flush()

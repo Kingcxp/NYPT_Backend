@@ -440,7 +440,7 @@ async def bind_lottery(lottery: Lottery, request: Request, db: AsyncSession = De
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
-@router.post("/manage/lottery/unbind/{teamname}")
+@router.get("/manage/lottery/unbind/{teamname}")
 async def unbind_lottery(teamname: str, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
     解绑抽签号

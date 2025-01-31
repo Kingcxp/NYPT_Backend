@@ -3,7 +3,7 @@ import time
 from math import ceil
 from base64 import b64decode
 from pydantic import BaseModel
-from fastapi import Request, Depends, Response, status
+from fastapi import File, Request, Depends, Response, status
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, List
@@ -440,3 +440,24 @@ async def get_config_template(request: Request, db: AsyncSession = Depends(get_d
         filename="config_template.xls",
         status_code=status.HTTP_200_OK,
     )
+
+
+@router.post("/manage/user/award/upload")
+async def user_award_upload(request: Request, db: AsyncSession = Depends(get_db), files: bytes = File()) -> JSONResponse:
+    """
+    上传用户奖项信息
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    try:
+        await crud.upload_user_award(db, files)
+    except:
+        console.print_exception()
+        return JSONResponse(content={
+            "msg": "上传失败！"
+        }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return JSONResponse(content={
+        "msg": "上传成功！"
+    }, status_code=status.HTTP_200_OK)
