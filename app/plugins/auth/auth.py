@@ -440,3 +440,25 @@ async def get_config_template(request: Request, db: AsyncSession = Depends(get_d
         filename="config_template.xls",
         status_code=status.HTTP_200_OK,
     )
+
+
+@router.get("/bind/lottery/{user_id}/{lottery}")
+async def bind_lottery(user_id: int, lottery: int, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    绑定抽签号
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    try:
+
+        await crud.update_user_lottery(db, user_id, lottery)
+        return JSONResponse(content={
+            "msg": "绑定成功！"
+        }, status_code=status.HTTP_200_OK)
+    except:
+        console.print_exception()
+        return JSONResponse(content={
+            "msg": "绑定失败！"
+        }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
