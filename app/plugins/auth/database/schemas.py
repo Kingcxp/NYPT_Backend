@@ -31,6 +31,7 @@ class User(UserBase):
     award: Optional[str]
     school: Optional[str]
     tel: Optional[str]
+    lottery: Optional[int]
 
     class Config:
         from_attributes = True
