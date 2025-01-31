@@ -126,31 +126,6 @@ async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 25565) -> 
     return (await db.execute(select(models.User).offset(skip).limit(limit).order_by(models.User.user_id))).scalars().all()
 
 
-async def get_user_lottery(db: AsyncSession, user_id: int) -> int:
-    """
-    获取用户的抽签号
-    """
-    return (await db.execute(select(models.User.lottery).where(models.User.user_id == user_id))).scalars().first()
-
-
-async def get_lotteries(db: AsyncSession) -> List[int, int]:
-    """
-    获取所有抽签号不为 -1 的用户的用户 id 和抽签号
-    """
-    return (await db.execute(select(models.User.user_id, models.User.lottery).where(models.User.lottery != -1))).scalars().all()
-
-
-async def update_user_lottery(db: AsyncSession, user_id: int, lottery: int) -> None:
-    """
-    更新用户的抽签号
-    """
-    await db.execute(update(models.User).where(models.User.user_id == user_id).values({
-        models.User.lottery: lottery
-    }))
-    await db.commit()
-    await db.flush()
-
-
 async def create_user(db: AsyncSession, user: schemas.UserCreate) -> Optional[models.User]:
     """
     创建一个用户信息，提供的密码会自动加密，如果无法创建，返回 None

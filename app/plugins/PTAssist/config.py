@@ -22,6 +22,10 @@ class Config:
         data_folder,
         "counterpart_table.xls"
     )
+    LOTTERY_COUNTERPART_TABLE_PATH: str = os.path.join(
+        data_folder,
+        "counterpart_table_lottery.xls"
+    )
 
     #! 会场令牌表格文件路径
     TOKEN_TABLE_PATH: str = os.path.join(

@@ -47,6 +47,28 @@ async def get_all_rooms(db: AsyncSession, skip: int = 0, limit: int = 100) -> It
     return (await db.execute(select(models.Room).offset(skip).limit(limit).order_by(models.Room.room_id))).scalars().all()
 
 
+async def get_teamname_from_lottery(db: AsyncSession, lottery: int) -> Optional[str]:
+    """
+    通过抽签号获取队伍名
+    """
+    first = (await db.execute(select(models.Lottery).where(models.Lottery.lottery == lottery))).scalars().first()
+    return str(first.team_name) if first else None
+
+
+async def get_lottery(db: AsyncSession, team_name: str) -> Optional[models.Lottery]:
+    """
+    通过队伍名获取抽奖信息
+    """
+    return (await db.execute(select(models.Lottery).where(models.Lottery.team_name == team_name))).scalars().first()
+
+
+async def get_all_lotteries(db: AsyncSession) -> Iterable[models.Lottery]:
+    """
+    获取所有的抽奖信息
+    """
+    return (await db.execute(select(models.Lottery).order_by(models.Lottery.team_name))).scalars().all()
+
+
 async def create_room(db: AsyncSession, room: schemas.Room) -> Optional[models.Room]:
     """
     创建一个会场
@@ -67,6 +89,29 @@ async def create_all_rooms(db: AsyncSession, room_count: int) -> None:
             await create_room(db, schemas.Room(token=generate_password(8)))
 
 
+async def bind_lottery(db: AsyncSession, lottery: schemas.Lottery) -> Optional[models.Lottery]:
+    """
+    绑定一个抽奖
+    """
+    new_lottery = models.Lottery(**lottery.model_dump())
+    db.add(new_lottery)
+    await db.commit()
+    await db.refresh(new_lottery)
+    return new_lottery
+
+
+async def unbind_lottery(db: AsyncSession, team_name: str) -> bool:
+    """
+    解绑一个队伍的抽奖
+    """
+    if (lottery := await get_lottery(db, team_name)) is None:
+        return False
+    await db.delete(lottery)
+    await db.commit()
+    await db.flush()
+    return True
+
+
 async def delete_room(db: AsyncSession, room_id: int) -> bool:
     """
     删除一个会场，返回是否成功
@@ -76,6 +121,7 @@ async def delete_room(db: AsyncSession, room_id: int) -> bool:
     await db.delete(room)
     await db.commit()
     await db.flush()
+    await bind_lottery(db, schemas.Lottery(team_name="None", lottery_id=-1))
     return True
 
 
@@ -84,6 +130,15 @@ async def delete_all_rooms(db: AsyncSession) -> None:
     删除所有会场
     """
     await db.execute(delete(models.Room))
+    await db.commit()
+    await db.flush()
+
+
+async def delete_all_lotteries(db: AsyncSession) -> None:
+    """
+    删除所有抽奖
+    """
+    await db.execute(delete(models.Lottery))
     await db.commit()
     await db.flush()
 
@@ -124,6 +179,7 @@ class ServerConfigReader:
 
         self.teams: List[Dict[str, Any]] = []
         self.team_by_school: Dict[str, Dict[str, Any]] = {}
+        self.team_by_name: Dict[str, Dict[str, Any]] = {}
         for i in range(1, team_info_sheet.nrows):
             team = team_info_sheet.row_values(i)
             members = [{
@@ -138,6 +194,10 @@ class ServerConfigReader:
             })
             self.team_by_school[str(team[0])] = {
                 "name": str(team[1]),
+                "members": members
+            }
+            self.team_by_name[str(team[0])] = {
+                "school": str(team[0]),
                 "members": members
             }
 
@@ -167,16 +227,20 @@ class CounterpartTableWriter:
     """
     用来将对局信息写入到 Excel 文件中，已经存在的文件会被覆盖
     """
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, is_lottery: bool = False) -> None:
         self.path = path
         with open(self.path, "w", encoding="utf-8"):
             pass
 
         self.workbook: xlwt.Workbook = xlwt.Workbook(encoding="utf-8")
 
-        self.sheet_without_judge: xlwt.Worksheet = self.workbook.add_sheet("对阵表（无裁判）")
-        self.sheet_with_judge: xlwt.Worksheet = self.workbook.add_sheet("对阵表")
-        self.sheet_with_judge_and_school: xlwt.Worksheet = self.workbook.add_sheet("对阵表含学校")
+
+        if is_lottery:
+            self.sheet_without_judge: xlwt.Worksheet = self.workbook.add_sheet("对阵表")
+        else:
+            self.sheet_without_judge: xlwt.Worksheet = self.workbook.add_sheet("对阵表（无裁判）")
+            self.sheet_with_judge: xlwt.Worksheet = self.workbook.add_sheet("对阵表")
+            self.sheet_with_judge_and_school: xlwt.Worksheet = self.workbook.add_sheet("对阵表含学校")
 
     def on_exit(self) -> None:
         self.workbook.save(self.path)
@@ -560,40 +624,104 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
         return False
 
 
-async def generate_counterpart_table() -> bool:
+async def generate_number_counterpart_table() -> None:
+    """
+    生成抽签号对阵表，返回是否成功
+    """
+    if server_config is None:
+        return
+
+    teams: List[str] = [str(team) for team in range(1, len(server_config.teams) + 1)]
+    shuffle(teams)
+    cur_row, cur_col = 0, 0
+    writer = CounterpartTableWriter(Config.LOTTERY_COUNTERPART_TABLE_PATH, True)
+    tables: List[List[List[str]]] = []
+    for r in range(server_config.round_num):
+        table: List[List[str]] = [[], [], [], []]
+        writer.sheet_without_judge.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
+        cur_row += 1
+        for side in range(4):
+            for i in range(server_config.room_total):
+                try:
+                    table[side].append(teams[side * server_config.room_total + i])
+                except IndexError:
+                    table[side].append(str(-1))
+            shuffle(table[side])
+        writer.render_table(writer.sheet_without_judge, cur_row, cur_col, table, lambda x: x)
+        cur_row += server_config.room_total + 2
+        tables.append(table)
+        teams = teams[server_config.room_total + 1:] + teams[:server_config.room_total + 1]
+    writer.on_exit()
+
+
+async def generate_counterpart_table(db: AsyncSession) -> bool:
     """
     生成对阵表，返回是否成功
     """
     if server_config is None:
         return False
 
-    teams: List[Tuple[str, str]] = [(str(team.get("name")), str(team.get("school"))) for team in server_config.teams]
-    shuffle(teams)
-    cur_row, cur_col = 0, 0
+    #? 读取抽签号对阵表
+    if not os.path.exists(Config.LOTTERY_COUNTERPART_TABLE_PATH):
+        await generate_number_counterpart_table()
+    lottery_table = xlrd.open_workbook(Config.LOTTERY_COUNTERPART_TABLE_PATH)
+    lottery_sheet = lottery_table.sheet_by_index(0)
+    lottery_dict = {}
+    lotteries = await get_all_lotteries(db)
+    if len(list(lotteries)) != len(server_config.teams) + 1:
+        return False
+    for lottery in lotteries:
+        lottery_dict[lottery.lottery_id] = str(lottery.team_name)
     writer = CounterpartTableWriter(Config.COUNTERPART_TABLE_PATH)
     tables: List[List[List[Tuple[str, str]]]] = []
+
+    cur_row, cur_col = 0, 0
     for r in range(server_config.round_num):
         table: List[List[Tuple[str, str]]] = [[], [], [], []]
         writer.sheet_without_judge.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
         writer.sheet_with_judge.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
         writer.sheet_with_judge_and_school.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
         cur_row += 1
-        #? 装填
-        for side in range(4):
-            for i in range(server_config.room_total):
-                try:
-                    table[side].append(teams[side * server_config.room_total + i])
-                except IndexError:
-                    table[side].append(("None", "None"))
-            shuffle(table[side])
-        #? 保存
+        row = 0
+        for _ in range(server_config.room_total):
+            row += 1
+            for side in range(4):
+                lottery_id = int(lottery_sheet.cell_value(cur_row + row, side + 1))
+                team_name = lottery_dict.get(lottery_id, "ERROR")
+                table[side].append((team_name, server_config.team_by_name[team_name].get("school", "ERROR")))
         writer.render_table(writer.sheet_without_judge, cur_row, cur_col, table, lambda x: x[0])
         writer.render_table(writer.sheet_with_judge, cur_row, cur_col, table, lambda x: x[0])
         writer.render_table(writer.sheet_with_judge_and_school, cur_row, cur_col, table, lambda x: str(x))
         cur_row += server_config.room_total + 2
         tables.append(table)
-        #? 轮转队伍
-        teams = teams[server_config.room_total + 1:] + teams[:server_config.room_total + 1]
+
+    # teams: List[Tuple[str, str]] = [(str(team.get("name")), str(team.get("school"))) for team in server_config.teams]
+    # shuffle(teams)
+    # cur_row, cur_col = 0, 0
+    # writer = CounterpartTableWriter(Config.COUNTERPART_TABLE_PATH)
+    # tables: List[List[List[Tuple[str, str]]]] = []
+    # for r in range(server_config.round_num):
+    #     table: List[List[Tuple[str, str]]] = [[], [], [], []]
+    #     writer.sheet_without_judge.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
+    #     writer.sheet_with_judge.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
+    #     writer.sheet_with_judge_and_school.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
+    #     cur_row += 1
+    #     #? 装填
+    #     for side in range(4):
+    #         for i in range(server_config.room_total):
+    #             try:
+    #                 table[side].append(teams[side * server_config.room_total + i])
+    #             except IndexError:
+    #                 table[side].append(("None", "None"))
+    #         shuffle(table[side])
+    #     #? 保存
+    #     writer.render_table(writer.sheet_without_judge, cur_row, cur_col, table, lambda x: x[0])
+    #     writer.render_table(writer.sheet_with_judge, cur_row, cur_col, table, lambda x: x[0])
+    #     writer.render_table(writer.sheet_with_judge_and_school, cur_row, cur_col, table, lambda x: str(x))
+    #     cur_row += server_config.room_total + 2
+    #     tables.append(table)
+    #     #? 轮转队伍
+    #     teams = teams[server_config.room_total + 1:] + teams[:server_config.room_total + 1]
     #! 生成会场裁判（完全照抄 PTAssist_Server）
     judge_tables, is_success = try_generate_judges(tables, Config.JUDGE_GENERATE_TRY_TIMES)
     if not is_success:

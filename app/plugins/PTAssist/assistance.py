@@ -9,6 +9,8 @@ from fastapi import Request, Depends, Response, status, File
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.plugins.PTAssist.database.schemas import Lottery
+
 from . import router
 from .config import Config, data_folder
 from .database import get_db, crud
@@ -148,7 +150,7 @@ async def upload_roomdata(item: UploadRoomdataItem, request: Request, db: AsyncS
 
 
 @router.get("/manage/counterpart/generate")
-async def generate_counterpart_table(request: Request) -> Response:
+async def generate_counterpart_table(request: Request, db: AsyncSession = Depends(get_db)) -> Response:
     """
     生成对阵表
     """
@@ -156,12 +158,29 @@ async def generate_counterpart_table(request: Request) -> Response:
         return JSONResponse(content={
             "msg": "权限不足！"
         }, status_code=status.HTTP_403_FORBIDDEN)
-    if not await crud.generate_counterpart_table():
+    if not await crud.generate_counterpart_table(db):
         return JSONResponse(content={
             "msg": "生成失败！"
         }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return FileResponse(
         path=Config.COUNTERPART_TABLE_PATH,
+        filename="counterpart_table.xls",
+        status_code=status.HTTP_200_OK
+    )
+
+
+@router.get("/manage/counterpart/generate_lottery")
+async def generate_lottery_counterpart_table(request: Request) -> Response:
+    """
+    生成抽签号对阵表
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    await crud.generate_number_counterpart_table()
+    return FileResponse(
+        path=Config.LOTTERY_COUNTERPART_TABLE_PATH,
         filename="counterpart_table.xls",
         status_code=status.HTTP_200_OK
     )
@@ -406,3 +425,29 @@ async def download_scoring_files(item: ScoringItem, request: Request) -> Respons
         filename=filename,
         status_code=status.HTTP_200_OK
     )
+
+
+@router.post("/manage/lottery/bind")
+async def bind_lottery(lottery: Lottery, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    绑定抽签号
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    await crud.bind_lottery(db, lottery)
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
+@router.post("/manage/lottery/unbind/{teamname}")
+async def unbind_lottery(teamname: str, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    解绑抽签号
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    await crud.unbind_lottery(db, teamname)
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)

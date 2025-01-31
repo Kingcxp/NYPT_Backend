@@ -20,7 +20,6 @@ class User(database.Base):
         award: 奖项信息(身份非队伍无效)
         school: 学校名称
         tel: 联系人电话号码
-        lottery: 抽签号
     """
     __tablename__ = "users"
 
@@ -36,4 +35,3 @@ class User(database.Base):
     award = Column(String(10485760))
     school = Column(String(128))
     tel = Column(String(32))
-    lottery = Column(Integer, default=-1)
