@@ -179,7 +179,7 @@ class ServerConfigReader:
 
         self.teams: List[Dict[str, Any]] = []
         self.team_by_school: Dict[str, Dict[str, Any]] = {}
-        self.team_by_name: Dict[str, Dict[str, Any]] = {}
+        self.team_by_name: Dict[str, Dict[str, Any]] = {"None": {"school": "None", "members": []}}
         for i in range(1, team_info_sheet.nrows):
             team = team_info_sheet.row_values(i)
             members = [{
@@ -196,7 +196,7 @@ class ServerConfigReader:
                 "name": str(team[1]),
                 "members": members
             }
-            self.team_by_name[str(team[0])] = {
+            self.team_by_name[str(team[1])] = {
                 "school": str(team[0]),
                 "members": members
             }
