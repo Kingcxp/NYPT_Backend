@@ -628,6 +628,15 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
         return False
 
 
+async def get_all_teamnames() -> List[str]:
+    """
+    获取所有队伍名称
+    """
+    if server_config is None:
+        return []
+    return [str(team) for team in range(1, len(server_config.teams) + 1)]
+
+
 async def generate_number_counterpart_table() -> None:
     """
     生成抽签号对阵表，返回是否成功

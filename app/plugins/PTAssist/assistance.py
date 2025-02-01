@@ -427,6 +427,20 @@ async def download_scoring_files(item: ScoringItem, request: Request) -> Respons
     )
 
 
+@router.get("/manage/lottery/teamnames")
+async def get_teamnames(request: Request) -> JSONResponse:
+    """
+    获取所有队伍名称
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    return JSONResponse(content={
+        "data": crud.get_all_teamnames()
+    })
+
+
 @router.post("/manage/lottery/bind")
 async def bind_lottery(lottery: Lottery, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
