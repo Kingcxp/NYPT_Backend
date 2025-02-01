@@ -440,6 +440,19 @@ async def bind_lottery(lottery: Lottery, request: Request, db: AsyncSession = De
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
 
 
+@router.get("/manage/lottery/clear")
+async def clear_lottery(request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """
+    清空抽签号
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    await crud.delete_all_lotteries(db)
+    return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
 @router.get("/manage/lottery/unbind/{teamname}")
 async def unbind_lottery(teamname: str, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
