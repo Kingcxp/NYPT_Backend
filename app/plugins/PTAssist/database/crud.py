@@ -628,7 +628,7 @@ async def generate_room_data(tables: List[List[List[Tuple[str, str]]]]) -> bool:
         return False
 
 
-async def get_all_teamnames() -> List[str]:
+def get_all_teamnames() -> List[str]:
     """
     获取所有队伍名称
     """
