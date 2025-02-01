@@ -220,6 +220,10 @@ class ServerConfigReader:
         workbook.release_resources()
 
 
+def get_team_number() -> int:
+    return len(server_config.teams) if server_config is not None else 0
+
+
 server_config: Optional[ServerConfigReader] = None
 
 

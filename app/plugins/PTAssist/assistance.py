@@ -451,3 +451,17 @@ async def unbind_lottery(teamname: str, request: Request, db: AsyncSession = Dep
         }, status_code=status.HTTP_403_FORBIDDEN)
     await crud.unbind_lottery(db, teamname)
     return JSONResponse(content={}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/manage/teams/number")
+async def get_team_number(request: Request) -> JSONResponse:
+    """
+    获取队伍数量
+    """
+    if request.session.get("identity") != "Administrator":
+        return JSONResponse(content={
+            "msg": "权限不足！"
+        }, status_code=status.HTTP_403_FORBIDDEN)
+    return JSONResponse(content={
+        "count": crud.get_team_number()
+    }, status_code=status.HTTP_200_OK)
