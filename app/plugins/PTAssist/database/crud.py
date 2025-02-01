@@ -634,7 +634,7 @@ def get_all_teamnames() -> List[str]:
     """
     if server_config is None:
         return []
-    return [str(team) for team in range(1, len(server_config.teams) + 1)]
+    return [team.get("name", "ERROR") for team in server_config.teams]
 
 
 async def generate_number_counterpart_table() -> None:

@@ -9,11 +9,9 @@ from fastapi import Request, Depends, Response, status, File
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.plugins.PTAssist.database.schemas import Lottery
-
 from . import router
 from .config import Config, data_folder
-from .database import get_db, crud
+from .database import get_db, crud, schemas
 from ...manager import console
 
 
@@ -442,7 +440,7 @@ async def get_teamnames(request: Request) -> JSONResponse:
 
 
 @router.post("/manage/lottery/bind")
-async def bind_lottery(lottery: Lottery, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
+async def bind_lottery(lottery: schemas.Lottery, request: Request, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
     绑定抽签号
     """
