@@ -141,6 +141,7 @@ async def delete_all_lotteries(db: AsyncSession) -> None:
     await db.execute(delete(models.Lottery))
     await db.commit()
     await db.flush()
+    await bind_lottery(db, schemas.Lottery(team_name="None", lottery_id=-1))
 
 
 class ServerConfigReader:
@@ -707,34 +708,6 @@ async def generate_counterpart_table(db: AsyncSession) -> bool:
         writer.render_table(writer.sheet_with_judge_and_school, cur_row, cur_col, table, lambda x: str(x))
         cur_row += server_config.room_total + 2
         tables.append(table)
-
-    # teams: List[Tuple[str, str]] = [(str(team.get("name")), str(team.get("school"))) for team in server_config.teams]
-    # shuffle(teams)
-    # cur_row, cur_col = 0, 0
-    # writer = CounterpartTableWriter(Config.COUNTERPART_TABLE_PATH)
-    # tables: List[List[List[Tuple[str, str]]]] = []
-    # for r in range(server_config.round_num):
-    #     table: List[List[Tuple[str, str]]] = [[], [], [], []]
-    #     writer.sheet_without_judge.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
-    #     writer.sheet_with_judge.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
-    #     writer.sheet_with_judge_and_school.write(cur_row, cur_col, f"第{r + 1}轮对阵表")
-    #     cur_row += 1
-    #     #? 装填
-    #     for side in range(4):
-    #         for i in range(server_config.room_total):
-    #             try:
-    #                 table[side].append(teams[side * server_config.room_total + i])
-    #             except IndexError:
-    #                 table[side].append(("None", "None"))
-    #         shuffle(table[side])
-    #     #? 保存
-    #     writer.render_table(writer.sheet_without_judge, cur_row, cur_col, table, lambda x: x[0])
-    #     writer.render_table(writer.sheet_with_judge, cur_row, cur_col, table, lambda x: x[0])
-    #     writer.render_table(writer.sheet_with_judge_and_school, cur_row, cur_col, table, lambda x: str(x))
-    #     cur_row += server_config.room_total + 2
-    #     tables.append(table)
-    #     #? 轮转队伍
-    #     teams = teams[server_config.room_total + 1:] + teams[:server_config.room_total + 1]
     #! 生成会场裁判（完全照抄 PTAssist_Server）
     judge_tables, is_success = try_generate_judges(tables, Config.JUDGE_GENERATE_TRY_TIMES)
     if not is_success:
